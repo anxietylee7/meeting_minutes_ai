@@ -290,7 +290,7 @@ body{font-family:'Noto Sans KR','DM Sans',sans-serif;background:var(--bg);color:
 
           <div class="image-drop-bar" id="imageBar" onclick="document.getElementById('imgInput').click()">
             <span class="drop-icon">🖼️</span>
-            <div class="drop-text">이미지를 드래그하거나 <span>클릭하여 업로드</span>하면 텍스트를 자동 인식합니다</div>
+            <div class="drop-text">이미지를 드래그하거나 <span>클릭하여 업로드</span>하면 텍스트 전사(OCR)를 수행합니다</div>
           </div>
           <input type="file" id="imgInput" accept="image/*" style="display:none" onchange="handleImage(event)">
         </div>
@@ -326,9 +326,9 @@ const T=[
   {id:'qa',label:'QA 리뷰',icon:'🐛',tag:'tag-qa',hint:'버그 목록, 심각도, 재현 경로, 우선순위, 담당자, 해결 기한 위주로 정리해주세요.'},
 ];
 
-if(!localStorage.getItem('sg_ms_version_2')) {
+if(!localStorage.getItem('sg_ms_version_3')) {
   localStorage.setItem('sg_ms', JSON.stringify([{"version":"M28","name":"전체 마일스톤"},{"version":"M28_4월","name":"4월 마일스톤"},{"version":"M28_5월","name":"5월 마일스톤"},{"version":"M28_6월","name":"6월 마일스톤"}]));
-  localStorage.setItem('sg_ms_version_2', 'true');
+  localStorage.setItem('sg_ms_version_3', 'true');
 }
 
 let S={
@@ -487,15 +487,19 @@ function showEmpty(){
   document.getElementById('resultBody').innerHTML=`<div class="empty-state"><div class="empty-icon">✦</div><div class="empty-text">회의 내용을 입력하고 생성하세요<br><span style="font-size:11px;opacity:0.5;">LIVE API와 연결되었습니다</span></div></div>`;
 }
 
-// 텍스트 강제 정제 로직: AI가 반환한 값 중 특수 기호(◦, ▪, ㅇ 등)를 이용한 가짜 들여쓰기를 진짜 들여쓰기로 교정
-function cleanMarkdownList(val) {
+// AI가 반환한 값 중 특수 기호(◦, ▪, ㅇ 등)를 이용한 가짜 들여쓰기를 진짜 들여쓰기(- )로 교정
+function cleanMarkdownList(val, enforceList = false) {
   if (!val) return '';
   let str = Array.isArray(val) ? val.join('\n') : String(val);
   
-  // "- ◦ 텍스트" 형식을 "  - 텍스트" 로 변환 (하위 항목 렌더링 정상화)
+  // 특수기호를 올바른 마크다운 들여쓰기로 강제 치환
   str = str.replace(/^[ \t]*-[ \t]*[◦▪ㅇ][ \t]*/gm, '  - ');
-  // "◦ 텍스트" 형식을 "  - 텍스트" 로 변환
   str = str.replace(/^[ \t]*[◦▪ㅇ][ \t]*/gm, '  - ');
+  
+  // 배열이 아니더라도, 리스트 형태를 요구했다면 줄바꿈 기준으로 - 를 강제 주입
+  if (enforceList && !str.includes('- ')) {
+    str = str.split('\n').filter(line => line.trim().length > 0).map(line => '- ' + line.trim()).join('\n');
+  }
   
   return str;
 }
@@ -513,9 +517,8 @@ function renderResult(r){
       
   if(r.milestones?.length){h+='<div style="display:flex;gap:6px;flex-wrap:wrap;">';r.milestones.forEach(ms=>{const f=S.ms.find(m=>m.version===ms);h+=`<span class="result-ms-tag">🏷️ ${ms}${f?' — '+f.name:''}</span>`;});h+='</div>';}
   
-  // 정제 로직 태우기
-  const kpStr = cleanMarkdownList(r.keyPoints);
-  const fsStr = cleanMarkdownList(r.fullSummary);
+  const kpStr = cleanMarkdownList(r.keyPoints, true);
+  const fsStr = cleanMarkdownList(r.fullSummary, true);
   const etcStr = cleanMarkdownList(r.etc);
 
   if(kpStr) h+=`<div class="result-section"><div class="result-section-title">💡 핵심 요약</div><div class="summary-box">${marked.parse(kpStr)}</div></div>`;
@@ -548,6 +551,12 @@ function renderResult(r){
     h+='</div>';
   }
   
+  if(r.pending?.length){
+    h+=`<div class="result-section"><div class="result-section-title">⏳ 논의 필요 / 미결</div>`;
+    r.pending.forEach(p=>h+=`<div class="result-item pending">${p}</div>`);
+    h+='</div>';
+  }
+
   if(r.issues?.length){
     const issueTitle = S.tpl === 'plan' ? '⚠️ 이슈/리스크 및 고려사항' : '⚠️ 이슈/리스크';
     h+=`<div class="result-section"><div class="result-section-title">${issueTitle}</div>`;
@@ -565,8 +574,8 @@ async function copyResult(){
   if(!S.result){showToast('복사할 내용이 없습니다');return;}
   const r=S.result, t=T.find(t=>t.id===r.template);
   
-  const kpStr = cleanMarkdownList(r.keyPoints);
-  const fsStr = cleanMarkdownList(r.fullSummary);
+  const kpStr = cleanMarkdownList(r.keyPoints, true);
+  const fsStr = cleanMarkdownList(r.fullSummary, true);
   const etcStr = cleanMarkdownList(r.etc);
 
   let plainText=`# ${document.getElementById('mTitle').value||'회의록'}\n`;
@@ -588,6 +597,8 @@ async function copyResult(){
     });
     plainText += '\n';
   }
+
+  if(r.pending?.length) plainText+=`## 논의 필요 / 미결\n${r.pending.map(p=>'- '+p).join('\n')}\n\n`;
 
   if(r.issues?.length) plainText+=`## 이슈/리스크${S.tpl === 'plan' ? ' 및 고려사항' : ''}\n${r.issues.map(i=>'- '+i).join('\n')}\n\n`;
   if(etcStr) plainText+=`## 기타\n${etcStr}\n`;
@@ -636,6 +647,12 @@ async function copyResult(){
     });
   }
   
+  if(r.pending?.length) {
+    htmlText += `<h2 style="color: #172b4d;">⏳ 논의 필요 / 미결</h2><ul>`;
+    r.pending.forEach(p => htmlText += `<li style="margin-bottom: 4px; color: #ff991f;">${p}</li>`);
+    htmlText += `</ul>`;
+  }
+
   if(r.issues?.length) {
     const issueTitle = S.tpl === 'plan' ? '⚠️ 이슈/리스크 및 고려사항' : '⚠️ 이슈/리스크';
     htmlText += `<h2 style="color: #172b4d;">${issueTitle}</h2><ul>`;

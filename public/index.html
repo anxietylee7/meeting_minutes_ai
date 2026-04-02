@@ -265,7 +265,11 @@ body{font-family:'Noto Sans KR','DM Sans',sans-serif;background:var(--bg);color:
           
           <input class="meta-input" id="mAttendees" placeholder="참석자 (쉼표로 구분)" style="flex-basis: 100%;">
           
-          <input class="meta-input" id="mLink" placeholder="참고 링크 (URL 등 입력)" style="flex-basis: 100%; margin-top: 4px;">
+          <div style="display:flex; gap:8px; flex-basis: 100%; margin-top: 4px;">
+            <input class="meta-input" id="mLink1" placeholder="참고 링크 1 (URL 등)" style="flex: 1;">
+            <input class="meta-input" id="mLink2" placeholder="참고 링크 2 (URL 등)" style="flex: 1;">
+            <input class="meta-input" id="mLink3" placeholder="참고 링크 3 (URL 등)" style="flex: 1;">
+          </div>
           
           <input class="meta-input" id="mDate" type="date" style="margin-top: 4px;">
           <select class="meta-select" id="mLocation" style="margin-top: 4px;">
@@ -398,7 +402,9 @@ function newMeeting(){
   document.getElementById('mDate').value=new Date().toISOString().split('T')[0];
   document.getElementById('mLocation').value='';
   document.getElementById('mAttendees').value='';
-  document.getElementById('mLink').value='';
+  document.getElementById('mLink1').value='';
+  document.getElementById('mLink2').value='';
+  document.getElementById('mLink3').value='';
   document.getElementById('mMilestone').value='';
   document.getElementById('rawInput').value='';
   document.getElementById('topbarTitle').textContent='새 회의록';
@@ -411,7 +417,9 @@ function loadMeeting(id){
   document.getElementById('mDate').value=m.date||'';
   document.getElementById('mLocation').value=m.location||'';
   document.getElementById('mAttendees').value=m.attendees||'';
-  document.getElementById('mLink').value=m.link||'';
+  document.getElementById('mLink1').value=m.links && m.links[0] ? m.links[0] : '';
+  document.getElementById('mLink2').value=m.links && m.links[1] ? m.links[1] : '';
+  document.getElementById('mLink3').value=m.links && m.links[2] ? m.links[2] : '';
   document.getElementById('mMilestone').value=m.milestone||'';
   document.getElementById('rawInput').value=m.raw||'';
   document.getElementById('topbarTitle').textContent=m.title||'제목 없음';
@@ -424,10 +432,14 @@ function saveMeeting(){
   const date=document.getElementById('mDate').value;
   const loc=document.getElementById('mLocation').value;
   const att=document.getElementById('mAttendees').value.trim();
-  const link=document.getElementById('mLink').value.trim();
+  const l1=document.getElementById('mLink1').value.trim();
+  const l2=document.getElementById('mLink2').value.trim();
+  const l3=document.getElementById('mLink3').value.trim();
+  const links = [l1, l2, l3].filter(Boolean);
   const ms=document.getElementById('mMilestone').value,raw=document.getElementById('rawInput').value.trim();
-  if(S.curId){const i=S.meetings.findIndex(m=>m.id===S.curId);if(i!==-1)S.meetings[i]={...S.meetings[i],title,date,location:loc,attendees:att,link,milestone:ms,raw,template:S.tpl,result:S.result};}
-  else{const id=Date.now().toString();S.curId=id;S.meetings.push({id,title,date,location:loc,attendees:att,link,milestone:ms,raw,template:S.tpl,result:S.result});}
+  
+  if(S.curId){const i=S.meetings.findIndex(m=>m.id===S.curId);if(i!==-1)S.meetings[i]={...S.meetings[i],title,date,location:loc,attendees:att,links,milestone:ms,raw,template:S.tpl,result:S.result};}
+  else{const id=Date.now().toString();S.curId=id;S.meetings.push({id,title,date,location:loc,attendees:att,links,milestone:ms,raw,template:S.tpl,result:S.result});}
   saveMeetings();renderList();document.getElementById('topbarTitle').textContent=title;showToast('💾 저장되었습니다');
 }
 function deleteMeeting(){
@@ -445,7 +457,10 @@ async function generate(){
   const date=document.getElementById('mDate').value;
   const loc=document.getElementById('mLocation').value;
   const att=document.getElementById('mAttendees').value.trim();
-  const link=document.getElementById('mLink').value.trim();
+  const l1=document.getElementById('mLink1').value.trim();
+  const l2=document.getElementById('mLink2').value.trim();
+  const l3=document.getElementById('mLink3').value.trim();
+  const links = [l1, l2, l3].filter(Boolean);
   const ms=document.getElementById('mMilestone').value;
 
   document.getElementById('genBtn').disabled=true;
@@ -469,14 +484,14 @@ async function generate(){
         template: S.tpl,
         dict: S.dict,
         milestones: S.ms,
-        link: link
+        links: links
       })
     });
 
     const aiData = await response.json();
     if (!response.ok) throw new Error(aiData.error || 'API 호출에 실패했습니다.');
 
-    S.result = { ...aiData, date, location: loc, attendees: att, link, template: S.tpl, raw };
+    S.result = { ...aiData, date, location: loc, attendees: att, links, template: S.tpl, raw };
     if(ms) S.result.milestones = [ms];
 
     renderResult(S.result);
@@ -520,7 +535,7 @@ function renderResult(r){
         <div class="result-meta-item"><div class="result-meta-label">장소</div><div class="result-meta-value">${r.location||'-'}</div></div>
         <div class="result-meta-item"><div class="result-meta-label">유형</div><div class="result-meta-value">${tpl?.label||'-'}</div></div>
         <div class="result-meta-item" style="flex-basis: 100%; margin-top:4px;"><div class="result-meta-label">참석자</div><div class="result-meta-value">${r.attendees||'-'}</div></div>
-        ${r.link ? `<div class="result-meta-item" style="flex-basis: 100%; margin-top:4px;"><div class="result-meta-label">참고 링크</div><div class="result-meta-value"><a href="${r.link}" target="_blank" style="color:var(--accent);">${r.link}</a></div></div>` : ''}
+        ${r.links && r.links.length > 0 ? `<div class="result-meta-item" style="flex-basis: 100%; margin-top:4px;"><div class="result-meta-label">참고 링크</div><div class="result-meta-value">${r.links.map(l => `<a href="${l}" target="_blank" style="color:var(--accent); margin-right:12px; word-break:break-all;">${l}</a>`).join('')}</div></div>` : ''}
       </div>`;
       
   if(r.milestones?.length){h+='<div style="display:flex;gap:6px;flex-wrap:wrap;">';r.milestones.forEach(ms=>{const f=S.ms.find(m=>m.version===ms);h+=`<span class="result-ms-tag">🏷️ ${ms}${f?' — '+f.name:''}</span>`;});h+='</div>';}
@@ -591,7 +606,7 @@ async function copyResult(){
 
   let plainText=`# ${document.getElementById('mTitle').value||'회의록'}\n`;
   plainText+=`날짜: ${r.date||''} | 장소: ${r.location||'-'} | 유형: ${t?.label||''}\n참석자: ${r.attendees||''}\n`;
-  if(r.link) plainText+=`참고 링크: ${r.link}\n`;
+  if(r.links && r.links.length > 0) plainText+=`참고 링크:\n${r.links.map(l => `- ${l}`).join('\n')}\n`;
   if(r.milestones?.length) plainText+=`마일스톤: ${r.milestones.join(', ')}\n`; plainText+='\n';
   
   if(kpStr) plainText+=`## 핵심 요약\n${kpStr}\n\n`;
@@ -632,10 +647,10 @@ async function copyResult(){
         <td style="padding: 8px; background-color: #f4f5f7;"><strong>참석자</strong></td>
         <td style="padding: 8px;" colspan="3">${r.attendees||'-'}</td>
       </tr>
-      ${r.link ? `
+      ${r.links && r.links.length > 0 ? `
       <tr>
         <td style="padding: 8px; background-color: #f4f5f7;"><strong>참고 링크</strong></td>
-        <td style="padding: 8px;" colspan="3"><a href="${r.link}">${r.link}</a></td>
+        <td style="padding: 8px;" colspan="3">${r.links.map(l => `<a href="${l}">${l}</a>`).join('<br>')}</td>
       </tr>` : ''}
       ${r.milestones?.length ? `
       <tr>

@@ -3,7 +3,6 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method Not Allowed' });
   }
 
-  // links 배열 추가 수신
   const { rawText, template, dict, milestones, links } = req.body;
 
   try {
@@ -33,7 +32,7 @@ export default async function handler(req, res) {
             - 개발실: 서비스 연동(API), 게임 클라이언트/서버 적용, 인프라 아키텍처 구축 등.
 
             [JSON 키값 구조 및 엄격한 작성 가이드]
-            - keyPoints: 회의의 핵심 내용을 Markdown 불릿 포인트(- ) 형식으로 짧게 요약.
+            - keyPoints: 회의의 핵심 내용을 Markdown 불릿 포인트(- ) 형식으로 요약할 것. (※ 매우 중요: 절대 5줄을 초과하지 말 것)
             - fullSummary: 회의 전체 내용을 빠짐없이 요약한 단일 문자열.
               ※ 매우 중요: 반드시 '- ' 로 시작하는 계층형 마크다운 리스트 형태로 작성할 것. 
               ※ 매우 중요: 절대 '~다'로 끝나는 서술형 문장을 쓰지 말 것. 반드시 '~함', '~임', '~예정' 형태의 개조식(명사형 종결)으로 작성할 것.

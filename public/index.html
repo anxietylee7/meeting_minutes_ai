@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SMILEGATE working AI — 회의록</title>
+<title>SMILEGATE MEETING AI — 회의록</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700&family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
@@ -156,7 +156,7 @@ body{font-family:'Noto Sans KR','DM Sans',sans-serif;background:var(--bg);color:
 .result-meta{padding:10px 14px;background:var(--surface2);border-radius:var(--radius-sm);border:1px solid var(--border);display:flex;gap:16px;flex-wrap:wrap;}
 .result-meta-item{display:flex;flex-direction:column;gap:2px;}
 .result-meta-label{font-size:10px;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:0.5px;}
-.result-meta-value{font-size:12px;font-weight:500;}
+.result-meta-value{font-size:12px;font-weight:500;word-break:break-all;}
 .result-ms-tag{display:inline-flex;align-items:center;gap:4px;padding:4px 12px;background:var(--accent-light);border:1px solid rgba(224,107,32,0.2);border-radius:20px;font-size:11px;font-weight:600;color:var(--accent);}
 .result-section{display:flex;flex-direction:column;gap:6px;}
 .result-section-title{font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.8px;display:flex;align-items:center;gap:6px;}
@@ -202,7 +202,7 @@ body{font-family:'Noto Sans KR','DM Sans',sans-serif;background:var(--bg);color:
       <div class="logo">
         <div class="logo-icon">S</div>
         <div>
-          <div class="logo-text">SMILEGATE <span>working AI</span></div>
+          <div class="logo-text">SMILEGATE <span>MEETING AI</span></div>
           <div class="logo-sub">MEETING MINUTES</div>
         </div>
       </div>
@@ -264,6 +264,8 @@ body{font-family:'Noto Sans KR','DM Sans',sans-serif;background:var(--bg);color:
           <input class="meta-input wide" id="mTitle" placeholder="회의 제목" style="flex-basis: 100%; margin-bottom: 4px;" oninput="updateTitle()">
           
           <input class="meta-input" id="mAttendees" placeholder="참석자 (쉼표로 구분)" style="flex-basis: 100%;">
+          
+          <input class="meta-input" id="mLink" placeholder="참고 링크 (URL 등 입력)" style="flex-basis: 100%; margin-top: 4px;">
           
           <input class="meta-input" id="mDate" type="date" style="margin-top: 4px;">
           <select class="meta-select" id="mLocation" style="margin-top: 4px;">
@@ -392,19 +394,27 @@ function renderList(){
 }
 function newMeeting(){
   S.curId=null;S.result=null;
-  document.getElementById('mTitle').value='';document.getElementById('mDate').value=new Date().toISOString().split('T')[0];
+  document.getElementById('mTitle').value='';
+  document.getElementById('mDate').value=new Date().toISOString().split('T')[0];
   document.getElementById('mLocation').value='';
-  document.getElementById('mAttendees').value='';document.getElementById('mMilestone').value='';
-  document.getElementById('rawInput').value='';document.getElementById('topbarTitle').textContent='새 회의록';
+  document.getElementById('mAttendees').value='';
+  document.getElementById('mLink').value='';
+  document.getElementById('mMilestone').value='';
+  document.getElementById('rawInput').value='';
+  document.getElementById('topbarTitle').textContent='새 회의록';
   selTpl('general');updateCount();showEmpty();renderList();
 }
 function loadMeeting(id){
   const m=S.meetings.find(x=>x.id===id);if(!m)return;
   S.curId=id;S.result=m.result;
-  document.getElementById('mTitle').value=m.title||'';document.getElementById('mDate').value=m.date||'';
+  document.getElementById('mTitle').value=m.title||'';
+  document.getElementById('mDate').value=m.date||'';
   document.getElementById('mLocation').value=m.location||'';
-  document.getElementById('mAttendees').value=m.attendees||'';document.getElementById('mMilestone').value=m.milestone||'';
-  document.getElementById('rawInput').value=m.raw||'';document.getElementById('topbarTitle').textContent=m.title||'제목 없음';
+  document.getElementById('mAttendees').value=m.attendees||'';
+  document.getElementById('mLink').value=m.link||'';
+  document.getElementById('mMilestone').value=m.milestone||'';
+  document.getElementById('rawInput').value=m.raw||'';
+  document.getElementById('topbarTitle').textContent=m.title||'제목 없음';
   selTpl(m.template||'general');updateCount();
   if(m.result)renderResult(m.result);renderList();
 }
@@ -414,9 +424,10 @@ function saveMeeting(){
   const date=document.getElementById('mDate').value;
   const loc=document.getElementById('mLocation').value;
   const att=document.getElementById('mAttendees').value.trim();
+  const link=document.getElementById('mLink').value.trim();
   const ms=document.getElementById('mMilestone').value,raw=document.getElementById('rawInput').value.trim();
-  if(S.curId){const i=S.meetings.findIndex(m=>m.id===S.curId);if(i!==-1)S.meetings[i]={...S.meetings[i],title,date,location:loc,attendees:att,milestone:ms,raw,template:S.tpl,result:S.result};}
-  else{const id=Date.now().toString();S.curId=id;S.meetings.push({id,title,date,location:loc,attendees:att,milestone:ms,raw,template:S.tpl,result:S.result});}
+  if(S.curId){const i=S.meetings.findIndex(m=>m.id===S.curId);if(i!==-1)S.meetings[i]={...S.meetings[i],title,date,location:loc,attendees:att,link,milestone:ms,raw,template:S.tpl,result:S.result};}
+  else{const id=Date.now().toString();S.curId=id;S.meetings.push({id,title,date,location:loc,attendees:att,link,milestone:ms,raw,template:S.tpl,result:S.result});}
   saveMeetings();renderList();document.getElementById('topbarTitle').textContent=title;showToast('💾 저장되었습니다');
 }
 function deleteMeeting(){
@@ -434,6 +445,7 @@ async function generate(){
   const date=document.getElementById('mDate').value;
   const loc=document.getElementById('mLocation').value;
   const att=document.getElementById('mAttendees').value.trim();
+  const link=document.getElementById('mLink').value.trim();
   const ms=document.getElementById('mMilestone').value;
 
   document.getElementById('genBtn').disabled=true;
@@ -456,14 +468,15 @@ async function generate(){
         rawText: raw,
         template: S.tpl,
         dict: S.dict,
-        milestones: S.ms
+        milestones: S.ms,
+        link: link
       })
     });
 
     const aiData = await response.json();
     if (!response.ok) throw new Error(aiData.error || 'API 호출에 실패했습니다.');
 
-    S.result = { ...aiData, date, location: loc, attendees: att, template: S.tpl, raw };
+    S.result = { ...aiData, date, location: loc, attendees: att, link, template: S.tpl, raw };
     if(ms) S.result.milestones = [ms];
 
     renderResult(S.result);
@@ -487,20 +500,14 @@ function showEmpty(){
   document.getElementById('resultBody').innerHTML=`<div class="empty-state"><div class="empty-icon">✦</div><div class="empty-text">회의 내용을 입력하고 생성하세요<br><span style="font-size:11px;opacity:0.5;">LIVE API와 연결되었습니다</span></div></div>`;
 }
 
-// AI가 반환한 값 중 특수 기호(◦, ▪, ㅇ 등)를 이용한 가짜 들여쓰기를 진짜 들여쓰기(- )로 교정
 function cleanMarkdownList(val, enforceList = false) {
   if (!val) return '';
   let str = Array.isArray(val) ? val.join('\n') : String(val);
-  
-  // 특수기호를 올바른 마크다운 들여쓰기로 강제 치환
   str = str.replace(/^[ \t]*-[ \t]*[◦▪ㅇ][ \t]*/gm, '  - ');
   str = str.replace(/^[ \t]*[◦▪ㅇ][ \t]*/gm, '  - ');
-  
-  // 배열이 아니더라도, 리스트 형태를 요구했다면 줄바꿈 기준으로 - 를 강제 주입
   if (enforceList && !str.includes('- ')) {
     str = str.split('\n').filter(line => line.trim().length > 0).map(line => '- ' + line.trim()).join('\n');
   }
-  
   return str;
 }
 
@@ -513,6 +520,7 @@ function renderResult(r){
         <div class="result-meta-item"><div class="result-meta-label">장소</div><div class="result-meta-value">${r.location||'-'}</div></div>
         <div class="result-meta-item"><div class="result-meta-label">유형</div><div class="result-meta-value">${tpl?.label||'-'}</div></div>
         <div class="result-meta-item" style="flex-basis: 100%; margin-top:4px;"><div class="result-meta-label">참석자</div><div class="result-meta-value">${r.attendees||'-'}</div></div>
+        ${r.link ? `<div class="result-meta-item" style="flex-basis: 100%; margin-top:4px;"><div class="result-meta-label">참고 링크</div><div class="result-meta-value"><a href="${r.link}" target="_blank" style="color:var(--accent);">${r.link}</a></div></div>` : ''}
       </div>`;
       
   if(r.milestones?.length){h+='<div style="display:flex;gap:6px;flex-wrap:wrap;">';r.milestones.forEach(ms=>{const f=S.ms.find(m=>m.version===ms);h+=`<span class="result-ms-tag">🏷️ ${ms}${f?' — '+f.name:''}</span>`;});h+='</div>';}
@@ -541,9 +549,12 @@ function renderResult(r){
       if (items && items.length > 0) {
         h += `<div style="margin-top: 6px; font-size: 12px; font-weight: 700; color: ${dept.color};">${dept.label}</div>`;
         items.forEach(a => {
+          const taskText = a.task || (typeof a === 'string' ? a : '내용 없음');
+          const assigneeText = a.assignee ? a.assignee : '';
+          
           h += `<div class="result-item action" style="border-left-color: ${dept.color};">
-                  ${a.task}
-                  ${a.assignee ? `<div class="action-meta"><span class="action-badge assignee" style="background:${dept.bg}; color:${dept.color};">👤 담당: ${a.assignee}</span></div>` : ''}
+                  ${taskText}
+                  ${assigneeText ? `<div class="action-meta"><span class="action-badge assignee" style="background:${dept.bg}; color:${dept.color};">👤 담당: ${assigneeText}</span></div>` : ''}
                 </div>`;
         });
       }
@@ -580,6 +591,7 @@ async function copyResult(){
 
   let plainText=`# ${document.getElementById('mTitle').value||'회의록'}\n`;
   plainText+=`날짜: ${r.date||''} | 장소: ${r.location||'-'} | 유형: ${t?.label||''}\n참석자: ${r.attendees||''}\n`;
+  if(r.link) plainText+=`참고 링크: ${r.link}\n`;
   if(r.milestones?.length) plainText+=`마일스톤: ${r.milestones.join(', ')}\n`; plainText+='\n';
   
   if(kpStr) plainText+=`## 핵심 요약\n${kpStr}\n\n`;
@@ -592,7 +604,11 @@ async function copyResult(){
     depts.forEach(dept => {
       if(r.followUps[dept.key] && r.followUps[dept.key].length > 0) {
         plainText += `### ${dept.label}\n`;
-        r.followUps[dept.key].forEach(a => { plainText += `- ${a.task} ${a.assignee ? `(담당: ${a.assignee})` : ''}\n`; });
+        r.followUps[dept.key].forEach(a => { 
+          const taskText = a.task || (typeof a === 'string' ? a : '내용 없음');
+          const assigneeText = a.assignee ? a.assignee : '';
+          plainText += `- ${taskText} ${assigneeText ? `(담당: ${assigneeText})` : ''}\n`; 
+        });
       }
     });
     plainText += '\n';
@@ -616,6 +632,11 @@ async function copyResult(){
         <td style="padding: 8px; background-color: #f4f5f7;"><strong>참석자</strong></td>
         <td style="padding: 8px;" colspan="3">${r.attendees||'-'}</td>
       </tr>
+      ${r.link ? `
+      <tr>
+        <td style="padding: 8px; background-color: #f4f5f7;"><strong>참고 링크</strong></td>
+        <td style="padding: 8px;" colspan="3"><a href="${r.link}">${r.link}</a></td>
+      </tr>` : ''}
       ${r.milestones?.length ? `
       <tr>
         <td style="padding: 8px; background-color: #f4f5f7;"><strong>마일스톤</strong></td>
@@ -640,7 +661,9 @@ async function copyResult(){
       if(r.followUps[dept.key] && r.followUps[dept.key].length > 0) {
         htmlText += `<h3 style="color: ${dept.color}; font-size: 14px; margin-top: 10px;">${dept.label}</h3><ul>`;
         r.followUps[dept.key].forEach(a => {
-          htmlText += `<li style="margin-bottom: 4px;">${a.task} ${a.assignee ? `<span style="color: #5e6c84; font-size: 12px;">(담당: ${a.assignee})</span>` : ''}</li>`;
+          const taskText = a.task || (typeof a === 'string' ? a : '내용 없음');
+          const assigneeText = a.assignee ? a.assignee : '';
+          htmlText += `<li style="margin-bottom: 4px;">${taskText} ${assigneeText ? `<span style="color: #5e6c84; font-size: 12px;">(담당: ${assigneeText})</span>` : ''}</li>`;
         });
         htmlText += `</ul>`;
       }

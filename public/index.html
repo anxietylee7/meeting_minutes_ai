@@ -321,19 +321,18 @@ body{font-family:'Noto Sans KR','DM Sans',sans-serif;background:var(--bg);color:
 const T=[
   {id:'general',label:'일반 회의',icon:'💬',tag:'tag-general',hint:'결정사항, 액션아이템, 담당자, 기한, 보류 사항 위주로 정리해주세요.'},
   {id:'kickoff',label:'킥오프',icon:'🚀',tag:'tag-kickoff',hint:'프로젝트/스프린트 목표, 일정, 역할 분담, R&R, 주요 마일스톤, 리스크 위주로 정리해주세요.'},
-  {id:'plan',label:'기획 리뷰',icon:'📐',tag:'tag-plan',hint:'기획 결정사항, 보류사항, 콘텐츠 수정 방향, 밸런스 논의, 후속 논의 사항 위주로 정리해주세요.'},
-  {id:'dev',label:'개발 회의',icon:'⚙️',tag:'tag-dev',hint:'기술 결정사항, 구현 방향, 아키텍처 논의, 빌드/배포 일정, 기술 부채, 담당자/기한 위주로 정리해주세요.'},
+  {id:'plan',label:'기획 리뷰',icon:'📐',tag:'tag-plan',hint:'기획 결정사항, 보류사항, 고려 사항, 콘텐츠 수정 방향, 기획 완료 일정, 후속 논의 사항 위주로 정리해주세요.'},
+  {id:'dev',label:'개발 회의',icon:'⚙️',tag:'tag-dev',hint:'기술 결정사항, 구현 방향, 아키텍처 논의, 개발 마감 일정, 기술 부채, 담당자 위주로 정리해주세요.'},
   {id:'qa',label:'QA 리뷰',icon:'🐛',tag:'tag-qa',hint:'버그 목록, 심각도, 재현 경로, 우선순위, 담당자, 해결 기한 위주로 정리해주세요.'},
 ];
 
-// 로컬 스토리지에 저장된 마일스톤이 과거 데이터라면 초기화
 if(!localStorage.getItem('sg_ms_version_2')) {
   localStorage.setItem('sg_ms', JSON.stringify([{"version":"M28","name":"전체 마일스톤"},{"version":"M28_4월","name":"4월 마일스톤"},{"version":"M28_5월","name":"5월 마일스톤"},{"version":"M28_6월","name":"6월 마일스톤"}]));
   localStorage.setItem('sg_ms_version_2', 'true');
 }
 
 let S={
-  curId:null,tpl:'general', // 기본 템플릿 변경
+  curId:null,tpl:'general',
   meetings:JSON.parse(localStorage.getItem('sg_meetings')||'[]'),
   dict:JSON.parse(localStorage.getItem('sg_dict')||'[]'),
   ms:JSON.parse(localStorage.getItem('sg_ms')||'[]'),
@@ -488,13 +487,17 @@ function showEmpty(){
   document.getElementById('resultBody').innerHTML=`<div class="empty-state"><div class="empty-icon">✦</div><div class="empty-text">회의 내용을 입력하고 생성하세요<br><span style="font-size:11px;opacity:0.5;">LIVE API와 연결되었습니다</span></div></div>`;
 }
 
-function safeParseString(val, isList = false) {
+// 텍스트 강제 정제 로직: AI가 반환한 값 중 특수 기호(◦, ▪, ㅇ 등)를 이용한 가짜 들여쓰기를 진짜 들여쓰기로 교정
+function cleanMarkdownList(val) {
   if (!val) return '';
-  if (Array.isArray(val)) {
-    if (isList) return val.map(x => String(x).startsWith('-') ? x : '- ' + x).join('\n');
-    return val.join('\n');
-  }
-  return String(val);
+  let str = Array.isArray(val) ? val.join('\n') : String(val);
+  
+  // "- ◦ 텍스트" 형식을 "  - 텍스트" 로 변환 (하위 항목 렌더링 정상화)
+  str = str.replace(/^[ \t]*-[ \t]*[◦▪ㅇ][ \t]*/gm, '  - ');
+  // "◦ 텍스트" 형식을 "  - 텍스트" 로 변환
+  str = str.replace(/^[ \t]*[◦▪ㅇ][ \t]*/gm, '  - ');
+  
+  return str;
 }
 
 function renderResult(r){
@@ -510,22 +513,19 @@ function renderResult(r){
       
   if(r.milestones?.length){h+='<div style="display:flex;gap:6px;flex-wrap:wrap;">';r.milestones.forEach(ms=>{const f=S.ms.find(m=>m.version===ms);h+=`<span class="result-ms-tag">🏷️ ${ms}${f?' — '+f.name:''}</span>`;});h+='</div>';}
   
-  const kpStr = safeParseString(r.keyPoints, true);
-  const fsStr = safeParseString(r.fullSummary, true); // 줄글 금지, 회의록 형식(리스트)으로 렌더링
-  const etcStr = safeParseString(r.etc);
+  // 정제 로직 태우기
+  const kpStr = cleanMarkdownList(r.keyPoints);
+  const fsStr = cleanMarkdownList(r.fullSummary);
+  const etcStr = cleanMarkdownList(r.etc);
 
   if(kpStr) h+=`<div class="result-section"><div class="result-section-title">💡 핵심 요약</div><div class="summary-box">${marked.parse(kpStr)}</div></div>`;
   
-  // 전체 내용 요약도 마크다운 파싱을 태워 계층형 리스트로 예쁘게 보여줌
   if(fsStr) h+=`<div class="result-section"><div class="result-section-title">📝 전체 내용 요약</div><div class="summary-box">${marked.parse(fsStr)}</div></div>`;
   
   if(r.decisions?.length){h+=`<div class="result-section"><div class="result-section-title">✅ 결정사항</div>`;r.decisions.forEach(d=>h+=`<div class="result-item decision">${d}</div>`);h+='</div>';}
   
-  // 부서별 후속 진행 렌더링
   if(r.followUps && Object.keys(r.followUps).length > 0){
     h+=`<div class="result-section"><div class="result-section-title">🎯 후속 진행</div>`;
-    
-    // 기획실, 개발실, 개발관리실, AI센터 순서대로 렌더링
     const depts = [
       { key: 'planning', label: '기획실', color: '#6B42B4', bg: 'rgba(107,66,180,0.1)' },
       { key: 'development', label: '개발실', color: '#2A78BE', bg: 'rgba(42,120,190,0.1)' },
@@ -548,7 +548,12 @@ function renderResult(r){
     h+='</div>';
   }
   
-  if(r.issues?.length){h+=`<div class="result-section"><div class="result-section-title">⚠️ 이슈/리스크</div>`;r.issues.forEach(i=>h+=`<div class="result-item issue">${i}</div>`);h+='</div>';}
+  if(r.issues?.length){
+    const issueTitle = S.tpl === 'plan' ? '⚠️ 이슈/리스크 및 고려사항' : '⚠️ 이슈/리스크';
+    h+=`<div class="result-section"><div class="result-section-title">${issueTitle}</div>`;
+    r.issues.forEach(i=>h+=`<div class="result-item issue">${i}</div>`);
+    h+='</div>';
+  }
   
   if(etcStr) h+=`<div class="result-section"><div class="result-section-title">💬 기타</div><div class="result-item note">${etcStr.replace(/\n/g, '<br>')}</div></div>`;
   
@@ -560,11 +565,10 @@ async function copyResult(){
   if(!S.result){showToast('복사할 내용이 없습니다');return;}
   const r=S.result, t=T.find(t=>t.id===r.template);
   
-  const kpStr = safeParseString(r.keyPoints, true);
-  const fsStr = safeParseString(r.fullSummary, true);
-  const etcStr = safeParseString(r.etc);
+  const kpStr = cleanMarkdownList(r.keyPoints);
+  const fsStr = cleanMarkdownList(r.fullSummary);
+  const etcStr = cleanMarkdownList(r.etc);
 
-  // 1. 일반 마크다운 텍스트 버전
   let plainText=`# ${document.getElementById('mTitle').value||'회의록'}\n`;
   plainText+=`날짜: ${r.date||''} | 장소: ${r.location||'-'} | 유형: ${t?.label||''}\n참석자: ${r.attendees||''}\n`;
   if(r.milestones?.length) plainText+=`마일스톤: ${r.milestones.join(', ')}\n`; plainText+='\n';
@@ -585,10 +589,9 @@ async function copyResult(){
     plainText += '\n';
   }
 
-  if(r.issues?.length) plainText+=`## 이슈/리스크\n${r.issues.map(i=>'- '+i).join('\n')}\n\n`;
+  if(r.issues?.length) plainText+=`## 이슈/리스크${S.tpl === 'plan' ? ' 및 고려사항' : ''}\n${r.issues.map(i=>'- '+i).join('\n')}\n\n`;
   if(etcStr) plainText+=`## 기타\n${etcStr}\n`;
 
-  // 2. 컨플루언스용 서식(HTML) 버전
   let htmlText = `
     <h1>[${t?.label||'회의록'}] ${document.getElementById('mTitle').value||'제목 없음'}</h1>
     <table style="border-collapse: collapse; width: 100%; margin-bottom: 20px;" border="1">
@@ -634,14 +637,14 @@ async function copyResult(){
   }
   
   if(r.issues?.length) {
-    htmlText += `<h2 style="color: #172b4d;">⚠️ 이슈/리스크</h2><ul>`;
+    const issueTitle = S.tpl === 'plan' ? '⚠️ 이슈/리스크 및 고려사항' : '⚠️ 이슈/리스크';
+    htmlText += `<h2 style="color: #172b4d;">${issueTitle}</h2><ul>`;
     r.issues.forEach(i => htmlText += `<li style="margin-bottom: 4px; color: #de350b;">${i}</li>`);
     htmlText += `</ul>`;
   }
   
   if(etcStr) htmlText += `<h2 style="color: #172b4d;">💬 기타</h2><p>${etcStr.replace(/\n/g, '<br>')}</p>`;
 
-  // 3. 복사 실행
   try {
     const clipboardItem = new ClipboardItem({
       'text/plain': new Blob([plainText], { type: 'text/plain' }),

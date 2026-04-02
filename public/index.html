@@ -335,7 +335,6 @@ let S={
   curId:null,tpl:'kickoff',
   meetings:JSON.parse(localStorage.getItem('sg_meetings')||'[]'),
   dict:JSON.parse(localStorage.getItem('sg_dict')||'[]'),
-  // 요청하신 마일스톤 기본값 세팅
   ms:JSON.parse(localStorage.getItem('sg_ms')||'[{"version":"M28","name":"전체 마일스톤"},{"version":"M28_4월","name":"4월 마일스톤"},{"version":"M28_5월","name":"5월 마일스톤"},{"version":"M28_6월","name":"6월 마일스톤"}]'),
   result:null,uploadedImg:null
 };
@@ -464,7 +463,6 @@ async function generate(){
     const aiData = await response.json();
     if (!response.ok) throw new Error(aiData.error || 'API 호출에 실패했습니다.');
 
-    // 받아온 데이터를 result 객체에 저장 (장소 포함)
     S.result = { ...aiData, date, location: loc, attendees: att, template: S.tpl, raw };
     if(ms) S.result.milestones = [ms];
 
@@ -488,12 +486,22 @@ function showEmpty(){
   document.getElementById('statusDot').classList.remove('active');document.getElementById('saveBtn').disabled=true;
   document.getElementById('resultBody').innerHTML=`<div class="empty-state"><div class="empty-icon">✦</div><div class="empty-text">회의 내용을 입력하고 생성하세요<br><span style="font-size:11px;opacity:0.5;">LIVE API와 연결되었습니다</span></div></div>`;
 }
+
+// AI가 문자열이 아닌 배열을 반환했을 경우를 위한 방어용 파서
+function safeParseString(val, isList = false) {
+  if (!val) return '';
+  if (Array.isArray(val)) {
+    if (isList) return val.map(x => String(x).startsWith('-') ? x : '- ' + x).join('\n');
+    return val.join('\n');
+  }
+  return String(val);
+}
+
 function renderResult(r){
   const pl={high:'🔴 높음',mid:'🟡 중간',low:'🟢 낮음'},pc={high:'priority-high',mid:'priority-mid',low:'priority-low'};
   const tpl=T.find(t=>t.id===r.template);
   let h='<div class="result-content">';
   
-  // 메타 정보 (날짜, 장소, 유형, 참석자)
   h+=`<div class="result-meta">
         <div class="result-meta-item"><div class="result-meta-label">날짜</div><div class="result-meta-value">${r.date||'-'}</div></div>
         <div class="result-meta-item"><div class="result-meta-label">장소</div><div class="result-meta-value">${r.location||'-'}</div></div>
@@ -503,43 +511,111 @@ function renderResult(r){
       
   if(r.milestones?.length){h+='<div style="display:flex;gap:6px;flex-wrap:wrap;">';r.milestones.forEach(ms=>{const f=S.ms.find(m=>m.version===ms);h+=`<span class="result-ms-tag">🏷️ ${ms}${f?' — '+f.name:''}</span>`;});h+='</div>';}
   
-  // 요약 -> 핵심 요약 (마크다운)
-  if(r.keyPoints) h+=`<div class="result-section"><div class="result-section-title">💡 핵심 요약</div><div class="summary-box">${marked.parse(r.keyPoints)}</div></div>`;
+  // 배열 방어 코드 적용
+  const kpStr = safeParseString(r.keyPoints, true);
+  const fsStr = safeParseString(r.fullSummary);
+  const etcStr = safeParseString(r.etc);
+
+  if(kpStr) h+=`<div class="result-section"><div class="result-section-title">💡 핵심 요약</div><div class="summary-box">${marked.parse(kpStr)}</div></div>`;
+  if(fsStr) h+=`<div class="result-section"><div class="result-section-title">📝 전체 내용 요약</div><div class="result-item note">${fsStr.replace(/\n/g, '<br>')}</div></div>`;
   
-  // 보류/미결 -> 전체 내용 요약
-  if(r.fullSummary) h+=`<div class="result-section"><div class="result-section-title">📝 전체 내용 요약</div><div class="result-item note">${r.fullSummary.replace(/\n/g, '<br>')}</div></div>`;
-  
-  // 결정사항
   if(r.decisions?.length){h+=`<div class="result-section"><div class="result-section-title">✅ 결정사항</div>`;r.decisions.forEach(d=>h+=`<div class="result-item decision">${d}</div>`);h+='</div>';}
-  
-  // 액션아이템 -> 후속 진행
   if(r.followUps?.length){h+=`<div class="result-section"><div class="result-section-title">🎯 후속 진행</div>`;r.followUps.forEach(a=>h+=`<div class="result-item action">${a.task}<div class="action-meta">${a.assignee?`<span class="action-badge assignee">👤 ${a.assignee}</span>`:''}${a.due?`<span class="action-badge due">📅 ${a.due}</span>`:''}${a.priority?`<span class="action-badge ${pc[a.priority]||''}">${pl[a.priority]||a.priority}</span>`:''}</div></div>`);h+='</div>';}
-  
-  // 이슈/리스크
   if(r.issues?.length){h+=`<div class="result-section"><div class="result-section-title">⚠️ 이슈/리스크</div>`;r.issues.forEach(i=>h+=`<div class="result-item issue">${i}</div>`);h+='</div>';}
   
-  // 다음 회의 -> 기타
-  if(r.etc) h+=`<div class="result-section"><div class="result-section-title">💬 기타</div><div class="result-item note">${r.etc}</div></div>`;
+  if(etcStr) h+=`<div class="result-section"><div class="result-section-title">💬 기타</div><div class="result-item note">${etcStr.replace(/\n/g, '<br>')}</div></div>`;
   
   h+='</div>';document.getElementById('resultBody').innerHTML=h;
 }
 
-function copyResult(){
+/* ── COPY RESULT (CONFLUENCE HTML + PLAIN TEXT) ── */
+async function copyResult(){
   if(!S.result){showToast('복사할 내용이 없습니다');return;}
-  const r=S.result,t=T.find(t=>t.id===r.template);
+  const r=S.result, t=T.find(t=>t.id===r.template);
   
-  let x=`# ${document.getElementById('mTitle').value||'회의록'}\n`;
-  x+=`날짜: ${r.date||''} | 장소: ${r.location||'-'} | 유형: ${t?.label||''}\n참석자: ${r.attendees||''}\n`;
-  if(r.milestones?.length) x+=`마일스톤: ${r.milestones.join(', ')}\n`; x+='\n';
+  const kpStr = safeParseString(r.keyPoints, true);
+  const fsStr = safeParseString(r.fullSummary);
+  const etcStr = safeParseString(r.etc);
+
+  // 1. 일반 마크다운 텍스트 버전
+  let plainText=`# ${document.getElementById('mTitle').value||'회의록'}\n`;
+  plainText+=`날짜: ${r.date||''} | 장소: ${r.location||'-'} | 유형: ${t?.label||''}\n참석자: ${r.attendees||''}\n`;
+  if(r.milestones?.length) plainText+=`마일스톤: ${r.milestones.join(', ')}\n`; plainText+='\n';
   
-  if(r.keyPoints) x+=`## 핵심 요약\n${r.keyPoints}\n\n`;
-  if(r.fullSummary) x+=`## 전체 내용 요약\n${r.fullSummary}\n\n`;
-  if(r.decisions?.length) x+=`## 결정사항\n${r.decisions.map(d=>'- '+d).join('\n')}\n\n`;
-  if(r.followUps?.length) x+=`## 후속 진행\n${r.followUps.map(a=>'- '+a.task+(a.assignee?' ('+a.assignee+')':'')+(a.due?' ~'+a.due:'')).join('\n')}\n\n`;
-  if(r.issues?.length) x+=`## 이슈/리스크\n${r.issues.map(i=>'- '+i).join('\n')}\n\n`;
-  if(r.etc) x+=`## 기타\n${r.etc}\n`;
+  if(kpStr) plainText+=`## 핵심 요약\n${kpStr}\n\n`;
+  if(fsStr) plainText+=`## 전체 내용 요약\n${fsStr}\n\n`;
+  if(r.decisions?.length) plainText+=`## 결정사항\n${r.decisions.map(d=>'- '+d).join('\n')}\n\n`;
+  if(r.followUps?.length) plainText+=`## 후속 진행\n${r.followUps.map(a=>'- '+a.task+(a.assignee?' ('+a.assignee+')':'')+(a.due?' ~'+a.due:'')).join('\n')}\n\n`;
+  if(r.issues?.length) plainText+=`## 이슈/리스크\n${r.issues.map(i=>'- '+i).join('\n')}\n\n`;
+  if(etcStr) plainText+=`## 기타\n${etcStr}\n`;
+
+  // 2. 컨플루언스용 서식(HTML) 버전
+  let htmlText = `
+    <h1>[${t?.label||'회의록'}] ${document.getElementById('mTitle').value||'제목 없음'}</h1>
+    <table style="border-collapse: collapse; width: 100%; margin-bottom: 20px;" border="1">
+      <tr>
+        <td style="padding: 8px; background-color: #f4f5f7; width: 100px;"><strong>날짜</strong></td>
+        <td style="padding: 8px;">${r.date||'-'}</td>
+        <td style="padding: 8px; background-color: #f4f5f7; width: 100px;"><strong>장소</strong></td>
+        <td style="padding: 8px;">${r.location||'-'}</td>
+      </tr>
+      <tr>
+        <td style="padding: 8px; background-color: #f4f5f7;"><strong>참석자</strong></td>
+        <td style="padding: 8px;" colspan="3">${r.attendees||'-'}</td>
+      </tr>
+      ${r.milestones?.length ? `
+      <tr>
+        <td style="padding: 8px; background-color: #f4f5f7;"><strong>마일스톤</strong></td>
+        <td style="padding: 8px;" colspan="3">${r.milestones.join(', ')}</td>
+      </tr>` : ''}
+    </table>
+  `;
+
+  if(kpStr) htmlText += `<h2 style="color: #172b4d;">💡 핵심 요약</h2><div>${marked.parse(kpStr)}</div>`;
+  if(fsStr) htmlText += `<h2 style="color: #172b4d;">📝 전체 내용 요약</h2><p>${fsStr.replace(/\n/g, '<br>')}</p>`;
   
-  navigator.clipboard.writeText(x).then(()=>showToast('📋 클립보드에 복사되었습니다'));
+  if(r.decisions?.length) {
+    htmlText += `<h2 style="color: #172b4d;">✅ 결정사항</h2><ul>`;
+    r.decisions.forEach(d => htmlText += `<li style="margin-bottom: 4px;">${d}</li>`);
+    htmlText += `</ul>`;
+  }
+  
+  if(r.followUps?.length) {
+    htmlText += `<h2 style="color: #172b4d;">🎯 후속 진행 (액션아이템)</h2><ul>`;
+    r.followUps.forEach(a => {
+      let meta = [];
+      if(a.assignee) meta.push(`<strong>담당:</strong> <span style="color: #0052cc;">${a.assignee}</span>`);
+      if(a.due) meta.push(`<strong>기한:</strong> <span style="color: #00875a;">${a.due}</span>`);
+      if(a.priority) {
+        let pColor = a.priority === 'high' ? '#de350b' : (a.priority === 'mid' ? '#ff991f' : '#00875a');
+        let pText = a.priority === 'high' ? '높음' : (a.priority === 'mid' ? '중간' : '낮음');
+        meta.push(`<strong>우선순위:</strong> <span style="color:${pColor};">${pText}</span>`);
+      }
+      htmlText += `<li style="margin-bottom: 6px;">${a.task} ${meta.length > 0 ? `<br><span style="font-size: 12px; color: #5e6c84;">(${meta.join(' | ')})</span>` : ''}</li>`;
+    });
+    htmlText += `</ul>`;
+  }
+  
+  if(r.issues?.length) {
+    htmlText += `<h2 style="color: #172b4d;">⚠️ 이슈/리스크</h2><ul>`;
+    r.issues.forEach(i => htmlText += `<li style="margin-bottom: 4px; color: #de350b;">${i}</li>`);
+    htmlText += `</ul>`;
+  }
+  
+  if(etcStr) htmlText += `<h2 style="color: #172b4d;">💬 기타</h2><p>${etcStr.replace(/\n/g, '<br>')}</p>`;
+
+  // 3. 브라우저 API를 이용해 클립보드에 HTML, Plain 텍스트 동시 복사
+  try {
+    const clipboardItem = new ClipboardItem({
+      'text/plain': new Blob([plainText], { type: 'text/plain' }),
+      'text/html': new Blob([htmlText], { type: 'text/html' })
+    });
+    await navigator.clipboard.write([clipboardItem]);
+    showToast('📋 컨플루언스 위키용 서식으로 복사되었습니다');
+  } catch (err) {
+    console.warn("ClipboardItem API 미지원 브라우저입니다. 일반 텍스트로 복사합니다.");
+    navigator.clipboard.writeText(plainText).then(()=>showToast('📋 텍스트로 복사되었습니다'));
+  }
 }
 let tt;function showToast(m){clearTimeout(tt);let t=document.querySelector('.toast');if(t)t.remove();t=document.createElement('div');t.className='toast';t.textContent=m;document.body.appendChild(t);tt=setTimeout(()=>t.remove(),2500);}
 

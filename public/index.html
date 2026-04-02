@@ -3,458 +3,253 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>MinutesAI — 게임 개발 회의록</title>
+<title>SMILEGATE working AI — 회의록</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700&family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 :root {
-  --bg: #0d0f14;
-  --surface: #151820;
-  --surface2: #1c2030;
-  --surface3: #232840;
-  --border: #2a2f45;
-  --border2: #363d58;
-  --accent: #4f8bff;
-  --accent2: #7c5fff;
-  --accent3: #00d4aa;
-  --warn: #ff6b4a;
-  --text: #e8ecf5;
-  --text2: #8892b0;
-  --text3: #4a5470;
+  --bg: #F3EDE4;
+  --surface: #FFFFFF;
+  --surface2: #FAF6F0;
+  --surface3: #F0EAE0;
+  --border: #E2D9CC;
+  --border2: #D0C6B8;
+  --accent: #E06B20;
+  --accent-light: rgba(224,107,32,0.10);
+  --accent-mid: rgba(224,107,32,0.18);
+  --accent2: #C85A18;
+  --accent3: #2A9E6F;
+  --warn: #D94545;
+  --text: #2C2520;
+  --text2: #7A6E64;
+  --text3: #A89B90;
   --radius: 12px;
   --radius-sm: 8px;
-  --shadow: 0 4px 24px rgba(0,0,0,0.4);
 }
-* { margin:0; padding:0; box-sizing:border-box; }
-body {
-  font-family: 'Pretendard', sans-serif;
-  background: var(--bg);
-  color: var(--text);
-  min-height: 100vh;
-  font-size: 14px;
-  line-height: 1.6;
-}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Noto Sans KR','DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:14px;line-height:1.6;}
+::-webkit-scrollbar{width:5px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px;}
 
-::-webkit-scrollbar { width: 6px; }
-::-webkit-scrollbar-track { background: var(--bg); }
-::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+.app{display:flex;height:100vh;overflow:hidden;}
 
-.app { display: flex; height: 100vh; overflow: hidden; }
+/* ── SIDEBAR ── */
+.sidebar{width:272px;min-width:272px;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;}
+.sidebar-header{padding:20px 18px 16px;border-bottom:1px solid var(--border);}
+.logo{display:flex;align-items:center;gap:10px;margin-bottom:14px;}
+.logo-icon{width:32px;height:32px;background:linear-gradient(135deg,#E06B20,#F09040);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:15px;color:#fff;font-weight:700;font-family:'DM Sans',sans-serif;}
+.logo-text{font-size:13px;font-weight:700;color:var(--text);letter-spacing:-0.2px;line-height:1.3;}
+.logo-text span{color:var(--accent);font-weight:700;}
+.logo-sub{font-size:10px;color:var(--text3);font-weight:400;letter-spacing:0.5px;}
+.btn-new{width:100%;padding:10px 14px;background:var(--accent);border:none;border-radius:var(--radius-sm);color:#fff;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;justify-content:center;transition:all 0.2s;font-family:inherit;}
+.btn-new:hover{background:var(--accent2);transform:translateY(-1px);}
 
-.sidebar {
-  width: 260px;
-  min-width: 260px;
-  background: var(--surface);
-  border-right: 1px solid var(--border);
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
-.sidebar-header {
-  padding: 20px 18px 16px;
-  border-bottom: 1px solid var(--border);
-}
-.logo {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 14px;
-}
-.logo-icon {
-  width: 28px; height: 28px;
-  background: linear-gradient(135deg, var(--accent), var(--accent2));
-  border-radius: 8px;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 13px;
-}
-.logo-text { font-size: 15px; font-weight: 700; letter-spacing: -0.3px; }
-.logo-text span { color: var(--accent); }
+.sidebar-tabs{display:flex;border-bottom:1px solid var(--border);background:var(--surface2);}
+.sidebar-tab{flex:1;padding:9px 0;text-align:center;font-size:11px;font-weight:600;color:var(--text3);cursor:pointer;border-bottom:2px solid transparent;transition:all 0.15s;}
+.sidebar-tab:hover{color:var(--text2);}
+.sidebar-tab.active{color:var(--accent);border-bottom-color:var(--accent);background:var(--surface);}
 
-.btn-new {
-  width: 100%;
-  padding: 9px 14px;
-  background: linear-gradient(135deg, var(--accent), var(--accent2));
-  border: none;
-  border-radius: var(--radius-sm);
-  color: #fff;
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  display: flex; align-items: center; gap: 6px;
-  justify-content: center;
-  transition: opacity 0.2s, transform 0.1s;
-}
-.btn-new:hover { opacity: 0.9; transform: translateY(-1px); }
-.btn-new:active { transform: translateY(0); }
+.sidebar-panel{flex:1;overflow-y:auto;display:none;flex-direction:column;}
+.sidebar-panel.active{display:flex;}
 
-.sidebar-section { padding: 12px 10px 4px; font-size: 11px; font-weight: 600; color: var(--text3); letter-spacing: 0.8px; text-transform: uppercase; }
+.meeting-list{flex:1;overflow-y:auto;padding:6px 8px 16px;}
+.meeting-item{padding:10px 12px;border-radius:var(--radius-sm);cursor:pointer;transition:all 0.15s;margin-bottom:2px;border:1px solid transparent;}
+.meeting-item:hover{background:var(--surface2);}
+.meeting-item.active{background:var(--accent-light);border-color:rgba(224,107,32,0.2);}
+.meeting-item-title{font-size:13px;font-weight:500;margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.meeting-item-meta{font-size:11px;color:var(--text3);display:flex;gap:6px;align-items:center;}
+.meeting-tag{padding:1px 6px;border-radius:4px;font-size:10px;font-weight:600;}
+.empty-list{padding:24px 12px;text-align:center;color:var(--text3);font-size:12px;}
 
-.meeting-list { flex: 1; overflow-y: auto; padding: 4px 8px 16px; }
-.meeting-item {
-  padding: 10px 12px;
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-  transition: background 0.15s;
-  margin-bottom: 2px;
-  border: 1px solid transparent;
-}
-.meeting-item:hover { background: var(--surface2); }
-.meeting-item.active { background: var(--surface3); border-color: var(--border2); }
-.meeting-item-title { font-size: 13px; font-weight: 500; color: var(--text); margin-bottom: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.meeting-item-meta { font-size: 11px; color: var(--text3); display: flex; gap: 6px; }
-.meeting-tag {
-  padding: 1px 6px;
-  border-radius: 4px;
-  font-size: 10px;
-  font-weight: 600;
-}
+/* config panels */
+.config-panel{padding:10px 12px 16px;display:flex;flex-direction:column;gap:10px;}
+.config-section-title{font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:0.6px;}
+.config-desc{font-size:10px;color:var(--text3);line-height:1.5;}
+.config-add-row{display:flex;gap:6px;}
+.config-input{flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:6px 8px;color:var(--text);font-size:11px;font-family:inherit;outline:none;min-width:0;}
+.config-input:focus{border-color:var(--accent);}
+.config-input::placeholder{color:var(--text3);}
+.btn-config{padding:6px 12px;background:var(--accent-light);border:1px solid rgba(224,107,32,0.25);border-radius:6px;color:var(--accent);font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap;font-family:inherit;transition:all 0.15s;}
+.btn-config:hover{background:var(--accent-mid);}
+.config-list{display:flex;flex-direction:column;gap:3px;}
+.config-item{display:flex;align-items:center;gap:6px;padding:6px 8px;background:var(--surface2);border-radius:6px;font-size:11px;border:1px solid var(--border);}
+.config-item-name{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.config-item-desc{color:var(--text3);font-size:10px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;}
+.config-item-del{width:18px;height:18px;border:none;background:transparent;color:var(--text3);cursor:pointer;font-size:11px;border-radius:4px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.config-item-del:hover{background:rgba(217,69,69,0.1);color:var(--warn);}
+.ms-badge{padding:2px 7px;border-radius:4px;font-size:9px;font-weight:700;background:var(--accent-light);color:var(--accent);flex-shrink:0;}
+.config-count{font-size:10px;color:var(--text3);font-family:'JetBrains Mono',monospace;}
+.upload-row{display:flex;gap:6px;align-items:center;}
+.btn-upload-excel{padding:6px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text2);font-size:11px;font-weight:500;cursor:pointer;font-family:inherit;transition:all 0.15s;display:flex;align-items:center;gap:4px;}
+.btn-upload-excel:hover{border-color:var(--accent);color:var(--accent);}
 
-.empty-list { padding: 24px 12px; text-align: center; color: var(--text3); font-size: 12px; }
+/* ── MAIN ── */
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+.topbar{padding:0 24px;height:54px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;background:var(--surface);flex-shrink:0;}
+.topbar-title{font-size:15px;font-weight:600;flex:1;}
+.btn-icon{width:32px;height:32px;border:1px solid var(--border);background:transparent;border-radius:8px;color:var(--text3);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px;transition:all 0.15s;}
+.btn-icon:hover{background:var(--surface2);color:var(--text);border-color:var(--border2);}
 
-.main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+.content{flex:1;display:flex;overflow:hidden;}
 
-.topbar {
-  padding: 0 24px;
-  height: 56px;
-  border-bottom: 1px solid var(--border);
-  display: flex; align-items: center; gap: 12px;
-  background: var(--surface);
-  flex-shrink: 0;
-}
-.topbar-title { font-size: 15px; font-weight: 600; flex: 1; }
-.topbar-actions { display: flex; gap: 8px; }
-.btn-icon {
-  width: 32px; height: 32px;
-  border: 1px solid var(--border);
-  background: transparent;
-  border-radius: 8px;
-  color: var(--text2);
-  cursor: pointer;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 14px;
-  transition: all 0.15s;
-}
-.btn-icon:hover { background: var(--surface2); color: var(--text); border-color: var(--border2); }
+/* ── EDITOR ── */
+.editor-panel{flex:1;display:flex;flex-direction:column;overflow:hidden;border-right:1px solid var(--border);}
+.editor-toolbar{padding:10px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;background:var(--surface);flex-shrink:0;flex-wrap:wrap;}
+.toolbar-label{font-size:12px;color:var(--text3);font-weight:500;}
+.template-chips{display:flex;gap:6px;flex-wrap:wrap;flex:1;}
+.chip{padding:5px 12px;border-radius:20px;border:1px solid var(--border);background:transparent;color:var(--text2);font-size:11px;font-weight:500;cursor:pointer;transition:all 0.15s;white-space:nowrap;}
+.chip:hover{border-color:var(--accent);color:var(--accent);}
+.chip.active{background:var(--accent-light);border-color:var(--accent);color:var(--accent);font-weight:600;}
 
-.content { flex: 1; display: flex; overflow: hidden; }
+.meta-row{padding:10px 20px;border-bottom:1px solid var(--border);display:flex;gap:8px;flex-shrink:0;flex-wrap:wrap;background:var(--surface);}
+.meta-input{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:6px 10px;color:var(--text);font-size:12px;font-family:inherit;outline:none;transition:border-color 0.15s;}
+.meta-input:focus{border-color:var(--accent);}
+.meta-input::placeholder{color:var(--text3);}
+.meta-input.wide{flex:1;min-width:140px;}
+.meta-select{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:6px 10px;color:var(--text);font-size:12px;font-family:inherit;outline:none;}
 
-.editor-panel {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  border-right: 1px solid var(--border);
-}
+.editor-body{flex:1;display:flex;flex-direction:column;overflow:hidden;padding:14px 20px;gap:8px;background:var(--surface2);}
+.input-label{font-size:11px;font-weight:600;color:var(--text3);letter-spacing:0.5px;text-transform:uppercase;}
 
-.editor-toolbar {
-  padding: 12px 20px;
-  border-bottom: 1px solid var(--border);
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  background: var(--surface);
-  flex-shrink: 0;
-  flex-wrap: wrap;
-}
+.raw-textarea{flex:1;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;color:var(--text);font-size:13px;font-family:inherit;resize:none;outline:none;line-height:1.7;transition:border-color 0.15s;}
+.raw-textarea:focus{border-color:var(--accent);}
+.raw-textarea::placeholder{color:var(--text3);line-height:1.8;}
 
-.toolbar-label { font-size: 12px; color: var(--text3); font-weight: 500; }
+.image-drop-bar{padding:10px 14px;background:var(--surface);border:1.5px dashed var(--border2);border-radius:var(--radius-sm);display:flex;align-items:center;gap:10px;cursor:pointer;transition:all 0.2s;flex-shrink:0;}
+.image-drop-bar:hover{border-color:var(--accent);background:var(--accent-light);}
+.image-drop-bar.processing{border-color:var(--accent);border-style:solid;background:var(--accent-light);}
+.image-drop-bar .drop-icon{font-size:18px;flex-shrink:0;}
+.image-drop-bar .drop-text{font-size:11px;color:var(--text2);flex:1;}
+.image-drop-bar .drop-text span{color:var(--accent);font-weight:600;cursor:pointer;}
+.image-thumb{width:36px;height:36px;border-radius:6px;object-fit:cover;border:1px solid var(--border);}
+.image-clear{border:none;background:transparent;color:var(--text3);cursor:pointer;font-size:13px;padding:4px;}
+.image-clear:hover{color:var(--warn);}
+.ocr-spinner{width:14px;height:14px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin 0.7s linear infinite;flex-shrink:0;}
+@keyframes spin{to{transform:rotate(360deg);}}
 
-.template-chips { display: flex; gap: 6px; flex-wrap: wrap; flex: 1; }
-.chip {
-  padding: 4px 10px;
-  border-radius: 20px;
-  border: 1px solid var(--border);
-  background: transparent;
-  color: var(--text2);
-  font-size: 11px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.15s;
-  white-space: nowrap;
-}
-.chip:hover { border-color: var(--accent); color: var(--accent); }
-.chip.active { background: rgba(79,139,255,0.15); border-color: var(--accent); color: var(--accent); }
+.editor-footer{padding:10px 20px;border-top:1px solid var(--border);display:flex;gap:10px;align-items:center;flex-shrink:0;background:var(--surface);}
+.char-count{font-size:11px;color:var(--text3);font-family:'JetBrains Mono',monospace;}
+.model-badge{font-size:10px;color:var(--accent3);background:rgba(42,158,111,0.1);padding:2px 8px;border-radius:4px;font-weight:600;font-family:'JetBrains Mono',monospace;}
+.demo-badge{font-size:10px;color:var(--accent);background:var(--accent-light);padding:2px 8px;border-radius:4px;font-weight:600;font-family:'JetBrains Mono',monospace;}
+.btn-generate{margin-left:auto;padding:9px 22px;background:var(--accent);border:none;border-radius:var(--radius-sm);color:#fff;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;transition:all 0.2s;font-family:inherit;}
+.btn-generate:hover:not(:disabled){background:var(--accent2);transform:translateY(-1px);}
+.btn-generate:disabled{opacity:0.4;cursor:not-allowed;}
 
-.meta-row {
-  padding: 12px 20px;
-  border-bottom: 1px solid var(--border);
-  display: flex;
-  gap: 10px;
-  flex-shrink: 0;
-  flex-wrap: wrap;
-}
-.meta-input {
-  background: var(--surface2);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  padding: 6px 10px;
-  color: var(--text);
-  font-size: 12px;
-  font-family: inherit;
-  outline: none;
-  transition: border-color 0.15s;
-}
-.meta-input:focus { border-color: var(--accent); }
-.meta-input::placeholder { color: var(--text3); }
-.meta-input.wide { flex: 1; min-width: 160px; }
+/* ── RESULT ── */
+.result-panel{width:480px;min-width:380px;display:flex;flex-direction:column;overflow:hidden;background:var(--surface);}
+.result-header{padding:14px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;flex-shrink:0;}
+.result-title{font-size:13px;font-weight:600;flex:1;}
+.status-dot{width:6px;height:6px;border-radius:50%;background:var(--border2);}
+.status-dot.active{background:var(--accent3);box-shadow:0 0 6px rgba(42,158,111,0.5);}
+.result-body{flex:1;overflow-y:auto;padding:16px 20px;}
+.empty-state{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;color:var(--text3);}
+.empty-icon{font-size:36px;opacity:0.3;}
+.empty-text{font-size:13px;text-align:center;line-height:1.7;}
+.loading-state{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;}
+.spinner{width:28px;height:28px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin 0.8s linear infinite;}
+.loading-text{font-size:13px;color:var(--text2);}
+.loading-sub{font-size:11px;color:var(--text3);}
 
-.editor-body { flex: 1; display: flex; flex-direction: column; overflow: hidden; padding: 16px 20px; gap: 10px; }
+.result-content{display:flex;flex-direction:column;gap:14px;animation:fadeUp 0.3s ease;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
+.result-meta{padding:10px 14px;background:var(--surface2);border-radius:var(--radius-sm);border:1px solid var(--border);display:flex;gap:16px;flex-wrap:wrap;}
+.result-meta-item{display:flex;flex-direction:column;gap:2px;}
+.result-meta-label{font-size:10px;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:0.5px;}
+.result-meta-value{font-size:12px;font-weight:500;}
+.result-ms-tag{display:inline-flex;align-items:center;gap:4px;padding:4px 12px;background:var(--accent-light);border:1px solid rgba(224,107,32,0.2);border-radius:20px;font-size:11px;font-weight:600;color:var(--accent);}
+.result-section{display:flex;flex-direction:column;gap:6px;}
+.result-section-title{font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.8px;display:flex;align-items:center;gap:6px;}
+.result-section-title::after{content:'';flex:1;height:1px;background:var(--border);}
+.result-item{padding:8px 12px;background:var(--surface2);border-radius:var(--radius-sm);border-left:3px solid transparent;font-size:13px;line-height:1.6;}
+.result-item.decision{border-left-color:var(--accent3);}
+.result-item.action{border-left-color:var(--accent);}
+.result-item.pending{border-left-color:#E8A830;}
+.result-item.issue{border-left-color:var(--warn);}
+.result-item.note{border-left-color:var(--text3);}
+.action-meta{display:flex;gap:6px;margin-top:4px;flex-wrap:wrap;}
+.action-badge{padding:1px 7px;border-radius:4px;font-size:10px;font-weight:600;}
+.action-badge.assignee{background:rgba(107,66,28,0.08);color:#8B5E3C;}
+.action-badge.due{background:rgba(42,158,111,0.08);color:var(--accent3);}
+.action-badge.priority-high{background:rgba(217,69,69,0.08);color:var(--warn);}
+.action-badge.priority-mid{background:rgba(232,168,48,0.1);color:#C08A20;}
+.action-badge.priority-low{background:rgba(42,158,111,0.08);color:var(--accent3);}
+.summary-box{padding:12px 14px;background:var(--accent-light);border-radius:var(--radius-sm);border:1px solid rgba(224,107,32,0.15);font-size:13px;color:var(--text2);line-height:1.7;}
+.result-footer{padding:12px 20px;border-top:1px solid var(--border);display:flex;gap:8px;flex-shrink:0;}
+.btn-copy,.btn-save{flex:1;padding:8px 14px;border-radius:var(--radius-sm);font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;transition:all 0.15s;font-family:inherit;}
+.btn-copy{background:transparent;border:1px solid var(--border2);color:var(--text2);}
+.btn-copy:hover{background:var(--surface2);color:var(--text);}
+.btn-save{background:rgba(42,158,111,0.1);border:1px solid rgba(42,158,111,0.25);color:var(--accent3);}
+.btn-save:hover{background:rgba(42,158,111,0.18);}
+.btn-save:disabled{opacity:0.4;cursor:not-allowed;}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--text);border-radius:20px;padding:8px 18px;font-size:12px;font-weight:500;color:#fff;z-index:200;animation:fadeUp 0.2s ease;white-space:nowrap;}
 
-.input-label { font-size: 11px; font-weight: 600; color: var(--text3); letter-spacing: 0.6px; text-transform: uppercase; margin-bottom: 4px; }
-
-.raw-textarea {
-  flex: 1;
-  background: var(--surface2);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 14px 16px;
-  color: var(--text);
-  font-size: 13px;
-  font-family: inherit;
-  resize: none;
-  outline: none;
-  line-height: 1.7;
-  transition: border-color 0.15s;
-}
-.raw-textarea:focus { border-color: var(--accent); }
-.raw-textarea::placeholder { color: var(--text3); line-height: 1.8; }
-
-.editor-footer {
-  padding: 12px 20px;
-  border-top: 1px solid var(--border);
-  display: flex;
-  gap: 10px;
-  align-items: center;
-  flex-shrink: 0;
-}
-.char-count { font-size: 11px; color: var(--text3); font-family: 'JetBrains Mono', monospace; }
-.model-badge { font-size: 10px; color: var(--accent3); background: rgba(0,212,170,0.12); padding: 2px 8px; border-radius: 4px; font-weight: 600; font-family: 'JetBrains Mono', monospace; }
-.btn-generate {
-  margin-left: auto;
-  padding: 9px 20px;
-  background: linear-gradient(135deg, var(--accent), var(--accent2));
-  border: none;
-  border-radius: var(--radius-sm);
-  color: #fff;
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  display: flex; align-items: center; gap: 6px;
-  transition: opacity 0.2s, transform 0.1s;
-  font-family: inherit;
-}
-.btn-generate:hover:not(:disabled) { opacity: 0.9; transform: translateY(-1px); }
-.btn-generate:active { transform: translateY(0); }
-.btn-generate:disabled { opacity: 0.4; cursor: not-allowed; }
-
-.result-panel {
-  width: 480px;
-  min-width: 380px;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  background: var(--surface);
-}
-
-.result-header {
-  padding: 14px 20px;
-  border-bottom: 1px solid var(--border);
-  display: flex; align-items: center; gap: 8px;
-  flex-shrink: 0;
-}
-.result-title { font-size: 13px; font-weight: 600; flex: 1; }
-.status-dot {
-  width: 6px; height: 6px;
-  border-radius: 50%;
-  background: var(--text3);
-}
-.status-dot.active { background: var(--accent3); box-shadow: 0 0 6px var(--accent3); }
-
-.result-body { flex: 1; overflow-y: auto; padding: 16px 20px; }
-
-.empty-state {
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  color: var(--text3);
-}
-.empty-icon { font-size: 36px; opacity: 0.4; }
-.empty-text { font-size: 13px; }
-
-.loading-state {
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 16px;
-}
-.spinner {
-  width: 32px; height: 32px;
-  border: 3px solid var(--border);
-  border-top-color: var(--accent);
-  border-radius: 50%;
-  animation: spin 0.8s linear infinite;
-}
-@keyframes spin { to { transform: rotate(360deg); } }
-.loading-text { font-size: 13px; color: var(--text3); }
-.loading-sub { font-size: 11px; color: var(--text3); opacity: 0.6; }
-
-.result-content { display: flex; flex-direction: column; gap: 14px; animation: fadeUp 0.3s ease; }
-@keyframes fadeUp { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
-
-.result-meta {
-  padding: 10px 14px;
-  background: var(--surface2);
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--border);
-  display: flex; gap: 16px; flex-wrap: wrap;
-}
-.result-meta-item { display: flex; flex-direction: column; gap: 2px; }
-.result-meta-label { font-size: 10px; color: var(--text3); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
-.result-meta-value { font-size: 12px; color: var(--text); font-weight: 500; }
-
-.result-section { display: flex; flex-direction: column; gap: 6px; }
-.result-section-title {
-  font-size: 11px;
-  font-weight: 700;
-  color: var(--text3);
-  text-transform: uppercase;
-  letter-spacing: 0.8px;
-  display: flex; align-items: center; gap: 6px;
-}
-.result-section-title::after {
-  content: '';
-  flex: 1;
-  height: 1px;
-  background: var(--border);
-}
-
-.result-item {
-  padding: 8px 12px;
-  background: var(--surface2);
-  border-radius: var(--radius-sm);
-  border-left: 3px solid transparent;
-  font-size: 13px;
-  line-height: 1.6;
-}
-.result-item.decision { border-left-color: var(--accent3); }
-.result-item.action { border-left-color: var(--accent); }
-.result-item.pending { border-left-color: var(--warn); }
-.result-item.issue { border-left-color: #ff4a6b; }
-.result-item.note { border-left-color: var(--text3); }
-
-.action-meta {
-  display: flex; gap: 8px; margin-top: 4px; flex-wrap: wrap;
-}
-.action-badge {
-  padding: 1px 7px;
-  border-radius: 4px;
-  font-size: 10px;
-  font-weight: 600;
-  background: rgba(79,139,255,0.15);
-  color: var(--accent);
-}
-.action-badge.assignee { background: rgba(124,95,255,0.15); color: var(--accent2); }
-.action-badge.due { background: rgba(0,212,170,0.12); color: var(--accent3); }
-.action-badge.priority-high { background: rgba(255,75,75,0.15); color: #ff6b6b; }
-.action-badge.priority-mid { background: rgba(255,165,0,0.12); color: #ffa040; }
-.action-badge.priority-low { background: rgba(100,200,100,0.12); color: #64cc64; }
-
-.summary-box {
-  padding: 12px 14px;
-  background: rgba(79,139,255,0.07);
-  border-radius: var(--radius-sm);
-  border: 1px solid rgba(79,139,255,0.2);
-  font-size: 13px;
-  color: var(--text2);
-  line-height: 1.7;
-}
-
-.result-footer {
-  padding: 12px 20px;
-  border-top: 1px solid var(--border);
-  display: flex; gap: 8px;
-  flex-shrink: 0;
-}
-.btn-copy, .btn-save {
-  flex: 1;
-  padding: 8px 14px;
-  border-radius: var(--radius-sm);
-  font-size: 12px;
-  font-weight: 600;
-  cursor: pointer;
-  display: flex; align-items: center; justify-content: center; gap: 5px;
-  transition: all 0.15s;
-  font-family: inherit;
-}
-.btn-copy {
-  background: transparent;
-  border: 1px solid var(--border2);
-  color: var(--text2);
-}
-.btn-copy:hover { background: var(--surface2); color: var(--text); }
-.btn-save {
-  background: rgba(0,212,170,0.15);
-  border: 1px solid rgba(0,212,170,0.3);
-  color: var(--accent3);
-}
-.btn-save:hover { background: rgba(0,212,170,0.25); }
-.btn-save:disabled { opacity: 0.4; cursor: not-allowed; }
-
-.toast {
-  position: fixed;
-  bottom: 24px; left: 50%;
-  transform: translateX(-50%);
-  background: var(--surface3);
-  border: 1px solid var(--border2);
-  border-radius: 20px;
-  padding: 8px 18px;
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--text);
-  z-index: 200;
-  animation: fadeUp 0.2s ease;
-  white-space: nowrap;
-}
-
-.tag-sprint { background: rgba(79,139,255,0.15); color: var(--accent); }
-.tag-qa { background: rgba(255,75,75,0.15); color: #ff6b6b; }
-.tag-plan { background: rgba(124,95,255,0.15); color: var(--accent2); }
-.tag-post { background: rgba(255,165,0,0.15); color: #ffa040; }
-.tag-general { background: rgba(100,100,150,0.2); color: var(--text2); }
+.tag-kickoff{background:rgba(224,107,32,0.12);color:var(--accent);}
+.tag-plan{background:rgba(107,66,180,0.1);color:#6B42B4;}
+.tag-dev{background:rgba(42,120,190,0.1);color:#2A78BE;}
+.tag-general{background:rgba(120,110,100,0.1);color:var(--text2);}
+.tag-qa{background:rgba(217,69,69,0.1);color:var(--warn);}
 </style>
 </head>
 <body>
-
 <div class="app">
   <div class="sidebar">
     <div class="sidebar-header">
       <div class="logo">
-        <div class="logo-icon">📋</div>
-        <div class="logo-text">Minutes<span>AI</span></div>
+        <div class="logo-icon">S</div>
+        <div>
+          <div class="logo-text">SMILEGATE <span>working AI</span></div>
+          <div class="logo-sub">MEETING MINUTES</div>
+        </div>
       </div>
-      <button class="btn-new" onclick="newMeeting()">
-        <span>＋</span> 새 회의록
-      </button>
+      <button class="btn-new" onclick="newMeeting()">＋ 새 회의록</button>
     </div>
-    <div class="sidebar-section">저장된 회의록</div>
-    <div class="meeting-list" id="meetingList">
-      <div class="empty-list" id="emptyList">저장된 회의록이 없습니다</div>
+    <div class="sidebar-tabs">
+      <div class="sidebar-tab active" data-tab="meetings" onclick="switchTab('meetings')">회의록</div>
+      <div class="sidebar-tab" data-tab="dictionary" onclick="switchTab('dictionary')">명사집</div>
+      <div class="sidebar-tab" data-tab="milestones" onclick="switchTab('milestones')">마일스톤</div>
+    </div>
+    <div class="sidebar-panel active" id="panelMeetings">
+      <div class="meeting-list" id="meetingList"><div class="empty-list" id="emptyList">저장된 회의록이 없습니다</div></div>
+    </div>
+    <div class="sidebar-panel" id="panelDictionary">
+      <div class="config-panel">
+        <div style="display:flex;align-items:center;justify-content:space-between;"><div class="config-section-title">게임 고유 명사집</div><span class="config-count" id="dictCount">0개</span></div>
+        <div class="config-desc">캐릭터명, 스킬명, 던전명 등을 등록하면 AI가 정확하게 인식합니다.</div>
+        <div class="upload-row">
+          <button class="btn-upload-excel" onclick="document.getElementById('excelInput').click()">📎 엑셀 업로드</button>
+          <span style="font-size:10px;color:var(--text3);">.xlsx / .csv 지원</span>
+          <input type="file" id="excelInput" accept=".xlsx,.xls,.csv" style="display:none" onchange="handleExcelUpload(event)">
+        </div>
+        <div class="config-add-row">
+          <input class="config-input" id="dictName" placeholder="용어" style="min-width:0">
+          <input class="config-input" id="dictDesc" placeholder="설명" style="min-width:0">
+          <button class="btn-config" onclick="addDict()">추가</button>
+        </div>
+        <div class="config-list" id="dictList"></div>
+      </div>
+    </div>
+    <div class="sidebar-panel" id="panelMilestones">
+      <div class="config-panel">
+        <div style="display:flex;align-items:center;justify-content:space-between;"><div class="config-section-title">버전 / 마일스톤</div><span class="config-count" id="msCount">0개</span></div>
+        <div class="config-desc">운용 중인 마일스톤을 등록하면 회의 내용에서 자동 태깅됩니다.</div>
+        <div class="config-add-row">
+          <input class="config-input" id="msVersion" placeholder="버전" style="width:55px;flex:none">
+          <input class="config-input" id="msName" placeholder="이름 (예: 신규 던전 패치)">
+          <button class="btn-config" onclick="addMs()">추가</button>
+        </div>
+        <div class="config-list" id="msList"></div>
+      </div>
     </div>
   </div>
 
   <div class="main">
     <div class="topbar">
       <div class="topbar-title" id="topbarTitle">새 회의록</div>
-      <div class="topbar-actions">
-        <button class="btn-icon" title="회의록 삭제" onclick="deleteCurrentMeeting()">🗑</button>
+      <div style="display:flex;gap:8px;">
+        <button class="btn-icon" title="삭제" onclick="deleteMeeting()">🗑</button>
       </div>
     </div>
-
     <div class="content">
       <div class="editor-panel">
         <div class="editor-toolbar">
@@ -462,45 +257,38 @@ body {
           <div class="template-chips" id="templateChips"></div>
         </div>
         <div class="meta-row">
-          <input class="meta-input wide" id="meetingTitle" type="text" placeholder="회의 제목 (예: 2.0 패치 기획 리뷰)" oninput="updateTitle()">
-          <input class="meta-input" id="meetingDate" type="date">
-          <input class="meta-input" id="meetingAttendees" type="text" placeholder="참석자 (쉼표 구분)" style="width:200px">
+          <input class="meta-input wide" id="mTitle" placeholder="회의 제목" oninput="updateTitle()">
+          <input class="meta-input" id="mDate" type="date">
+          <input class="meta-input" id="mAttendees" placeholder="참석자" style="width:160px">
+          <select class="meta-select" id="mMilestone"><option value="">마일스톤 (선택)</option></select>
         </div>
         <div class="editor-body">
-          <div>
-            <div class="input-label">회의 내용 입력</div>
-          </div>
-          <textarea class="raw-textarea" id="rawInput"
-            placeholder="회의 내용을 자유롭게 입력하세요.
+          <div class="input-label">회의 내용 입력</div>
+          <textarea class="raw-textarea" id="rawInput" placeholder="회의 내용을 자유롭게 입력하세요.
 날것의 메모, 대화 내용, 키워드 나열 등 어떤 형식이든 괜찮습니다.
 
 예시)
-- 다음 스프린트 목표: 전투 밸런스 패치 + UI 개선
-- 기획팀 김대리: 보스 공격 패턴 3종 추가 필요, 이번 주 금요일까지
-- QA팀: 인벤토리 버그 재현 확인됨 (iOS 14 이하에서만), 담당 박개발
-- 서버팀: 로그인 세션 이슈 다음 스프린트로 보류
-- 클라이언트 빌드 배포 화요일 확정
-- 미결: 신규 캐릭터 밸런스 수치 확정 안됨, 기획팀 검토 후 재논의" oninput="updateCharCount()"></textarea>
+- 킥오프: 프로젝트 목표, 일정, R&R 논의
+- 기획팀 김대리: 발키리 궁극기 쿨타임 조정 필요
+- QA팀: 인벤토리 버그 재현됨 (iOS 14 이하)
+- 미결: 드롭률 수치 확정 안됨" oninput="updateCount()"></textarea>
+          <div class="image-drop-bar" id="imageBar" onclick="document.getElementById('imgInput').click()">
+            <span class="drop-icon">🖼️</span>
+            <div class="drop-text">이미지를 드래그하거나 <span>클릭하여 업로드</span>하면 텍스트를 자동 인식합니다</div>
+          </div>
+          <input type="file" id="imgInput" accept="image/*" style="display:none" onchange="handleImage(event)">
         </div>
         <div class="editor-footer">
           <span class="char-count" id="charCount">0자</span>
           <span class="model-badge">GPT-4.1-mini</span>
-          <button class="btn-generate" id="generateBtn" onclick="generate()">
-            ✦ 회의록 생성
-          </button>
+          <span class="demo-badge">DEMO</span>
+          <button class="btn-generate" id="genBtn" onclick="generate()">✦ 회의록 생성</button>
         </div>
       </div>
-
       <div class="result-panel">
-        <div class="result-header">
-          <div class="status-dot" id="statusDot"></div>
-          <div class="result-title">회의록 결과</div>
-        </div>
+        <div class="result-header"><div class="status-dot" id="statusDot"></div><div class="result-title">회의록 결과</div></div>
         <div class="result-body" id="resultBody">
-          <div class="empty-state">
-            <div class="empty-icon">✦</div>
-            <div class="empty-text">회의 내용을 입력하고 생성하세요</div>
-          </div>
+          <div class="empty-state"><div class="empty-icon">✦</div><div class="empty-text">회의 내용을 입력하고 생성하세요<br><span style="font-size:11px;opacity:0.5;">데모 모드로 동작합니다</span></div></div>
         </div>
         <div class="result-footer">
           <button class="btn-copy" onclick="copyResult()">📋 복사</button>
@@ -511,346 +299,245 @@ body {
   </div>
 </div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script>
-const TEMPLATES = [
-  { id:'sprint', label:'스프린트 플래닝', icon:'🏃', tag:'tag-sprint',
-    hint:'스프린트 목표, 태스크 분배, 담당자, 기한 위주로 정리해주세요.' },
-  { id:'qa', label:'QA 리뷰', icon:'🐛', tag:'tag-qa',
-    hint:'버그 목록, 재현 경로, 우선순위, 담당자, 해결 기한 위주로 정리해주세요.' },
-  { id:'plan', label:'기획 리뷰', icon:'📐', tag:'tag-plan',
-    hint:'결정사항, 보류사항, 수정 방향, 후속 논의 사항 위주로 정리해주세요.' },
-  { id:'post', label:'포스트모템', icon:'🔍', tag:'tag-post',
-    hint:'잘된 점, 개선점, 근본 원인, 재발 방지 액션아이템 위주로 정리해주세요.' },
-  { id:'general', label:'일반 회의', icon:'💬', tag:'tag-general',
-    hint:'결정사항, 액션아이템, 담당자, 기한, 보류 사항 위주로 정리해주세요.' },
+const T=[
+  {id:'kickoff',label:'킥오프',icon:'🚀',tag:'tag-kickoff',hint:'프로젝트/스프린트 목표, 일정, 역할 분담, R&R, 주요 마일스톤, 리스크 위주로 정리해주세요.'},
+  {id:'plan',label:'기획 리뷰',icon:'📐',tag:'tag-plan',hint:'기획 결정사항, 보류사항, 콘텐츠 수정 방향, 밸런스 논의, 후속 논의 사항 위주로 정리해주세요.'},
+  {id:'dev',label:'개발 회의',icon:'⚙️',tag:'tag-dev',hint:'기술 결정사항, 구현 방향, 아키텍처 논의, 빌드/배포 일정, 기술 부채, 담당자/기한 위주로 정리해주세요.'},
+  {id:'general',label:'일반 회의',icon:'💬',tag:'tag-general',hint:'결정사항, 액션아이템, 담당자, 기한, 보류 사항 위주로 정리해주세요.'},
+  {id:'qa',label:'QA 리뷰',icon:'🐛',tag:'tag-qa',hint:'버그 목록, 심각도, 재현 경로, 우선순위, 담당자, 해결 기한 위주로 정리해주세요.'},
 ];
-
-let state = {
-  currentId: null,
-  template: 'general',
-  meetings: JSON.parse(localStorage.getItem('minutesai_meetings') || '[]'),
-  result: null,
-  loading: false,
+const DEMO={
+  kickoff:{summary:"v2.0 대규모 업데이트 킥오프 회의를 진행했습니다. 전투 시스템 리뉴얼과 신규 레이드 '용의 둥지'를 핵심 목표로 설정하고, 6주 개발 + 2주 QA 일정과 팀별 R&R을 확정했습니다.",milestones:["v2.0"],decisions:["v2.0 핵심 목표: 전투 시스템 리뉴얼 + 레이드 '용의 둥지' 추가","개발 기간 6주 (4/7~5/16), QA 기간 2주 확정","주 단위 체크인, 격주 마일스톤 리뷰"],actions:[{task:"전투 시스템 기술 설계서 작성",assignee:"서버팀 이선임",due:"4/11(금)",priority:"high"},{task:"레이드 '용의 둥지' 기획서 초안",assignee:"기획팀 정과장",due:"4/14(월)",priority:"high"},{task:"발키리 스킬 리밸런싱 시뮬레이션",assignee:"기획팀 김대리",due:"4/18(금)",priority:"mid"},{task:"아트 에셋 리스트업 및 일정 산정",assignee:"아트팀 박리드",due:"4/11(금)",priority:"mid"}],pending:["외부 사운드 스튜디오 계약 — 다음 주 미팅 후 확정","레이드 매칭 방식(크로스서버) — 서버 공수 확인 후 결정"],issues:["아트팀 인력 1명 공백(4월 중순까지) — 에셋 일정 리스크","크로스서버 매칭 시 서버 지연 가능성"],nextMeeting:"4/14(월) 오전 10시 — 1주차 체크인"},
+  plan:{summary:"v2.0 전투 밸런스 기획 리뷰를 진행했습니다. 발키리 궁극기 쿨타임 하향 및 드롭률 상향이 확정되었고, 워리어 리밸런싱은 시뮬레이션 결과 대기 후 재논의합니다.",milestones:["v2.0"],decisions:["발키리 궁극기 쿨타임 40초→35초, 데미지 계수 8% 상향","레이드 드롭률: 전설 장비 2%→3% 상향","던전 난이도 3단계→5단계 세분화 확정"],actions:[{task:"발키리 스킬 수치 최종 정리",assignee:"기획팀 김대리",due:"금요일",priority:"high"},{task:"5단계 난이도별 몬스터 스탯 설계",assignee:"기획팀 정과장",due:"다음 주 수요일",priority:"mid"},{task:"드롭률 변경 경제 시뮬레이션",assignee:"기획팀 최주임",due:"다음 주 금요일",priority:"mid"}],pending:["워리어 리밸런싱 — 시뮬 결과 대기","신규 보스 패턴 — 아트 컨셉 대기"],issues:["드롭률 상향 시 인플레이션 우려","난이도 세분화 → 매칭 UI 수정 필요"],nextMeeting:"다음 주 화요일 오후 2시"},
+  dev:{summary:"v2.0 개발 회의에서 전투 서버 아키텍처를 동기→비동기 이벤트 구조로 전환하기로 결정했습니다. 클라이언트 빌드는 매주 화요일 정기 배포, API는 /v2/ 네임스페이스 분리를 확정했습니다.",milestones:["v2.0"],decisions:["전투 서버: 비동기 이벤트 드리븐 구조 전환","클라이언트 빌드: 매주 화요일 정기 배포","API 버저닝: /v2/ 분리, 하위 호환 유지"],actions:[{task:"비동기 전투 서버 프로토타입",assignee:"서버팀 이선임",due:"4/18(금)",priority:"high"},{task:"전투 UI 리팩토링(이벤트 기반)",assignee:"클라이언트 박개발",due:"4/21(월)",priority:"high"},{task:"API v2 스펙 문서화",assignee:"서버팀 최시니어",due:"4/14(월)",priority:"mid"},{task:"CI/CD 화요일 배포 자동화",assignee:"DevOps 한매니저",due:"4/11(금)",priority:"mid"}],pending:["로그인 세션 이슈 — 다음 스프린트 이관 검토","Redis 클러스터 확장 — 부하 테스트 후 결정"],issues:["비동기 전환 시 PvP 동기화 호환성 리스크","iOS 14 인벤토리 버그 핫픽스 필요"],nextMeeting:"4/14(월) 오전 11시"},
+  general:{summary:"전체 팀 주간 싱크에서 v2.0 진행 현황을 점검했습니다. QA 인력 1명 추가 투입을 승인하고, 기획-아트 간 에셋 핸드오프를 매주 수요일로 정례화했습니다.",milestones:["v2.0"],decisions:["마일스톤 2 마감: 4/30 확정","QA 인력 1명 추가 투입 승인","기획-아트 에셋 핸드오프: 매주 수요일"],actions:[{task:"에셋 핸드오프 프로세스 문서화",assignee:"PM 한매니저",due:"금요일",priority:"high"},{task:"QA 추가 인력 온보딩",assignee:"QA리드 최팀장",due:"다음 주 월요일",priority:"mid"},{task:"백로그 정리",assignee:"각 팀 리드",due:"이번 주 내",priority:"mid"}],pending:["사운드 스튜디오 계약 — 다음 주 확정"],issues:["아트 에셋 지연 시 빌드 일정 영향"],nextMeeting:"다음 주 월요일 오전 10시"},
+  qa:{summary:"QA 리뷰에서 총 7건 버그 보고, 크리티컬 2건(인벤토리 버그·PvP 매칭 타임아웃)을 우선 수정 대상으로 결정했습니다. 인벤토리 버그는 핫픽스 대상으로 격상되었습니다.",milestones:["v2.0"],decisions:["인벤토리 버그(iOS 14 이하): 핫픽스 격상","PvP 매칭 타임아웃: 서버 설정값 30s→45s 조정","버그 심각도 분류 기준 문서 업데이트"],actions:[{task:"인벤토리 버그 핫픽스",assignee:"클라이언트 박개발",due:"내일",priority:"high"},{task:"PvP 매칭 타임아웃 설정 조정",assignee:"서버팀 이선임",due:"오늘",priority:"high"},{task:"발키리 이펙트 깨짐 수정",assignee:"클라이언트 최주임",due:"이번 주",priority:"mid"},{task:"Android 12 크래시 재현 환경 정리",assignee:"QA 김테스터",due:"이번 주",priority:"low"}],pending:["Android 12 특정 기기 크래시 — 모니터링 중","용의 둥지 로딩 지연 — 서버 로그 분석 대기"],issues:["핫픽스 배포 시 30분 점검 필요","크리티컬 2건 라이브 영향 — DAU 소폭 감소"],nextMeeting:"목요일 오후 2시"}
 };
 
-function init() {
-  document.getElementById('meetingDate').value = new Date().toISOString().split('T')[0];
+const OCR_DEMO=`[이미지에서 추출된 텍스트]
 
-  const container = document.getElementById('templateChips');
-  TEMPLATES.forEach(t => {
-    const el = document.createElement('button');
-    el.className = 'chip' + (t.id === state.template ? ' active' : '');
-    el.textContent = t.icon + ' ' + t.label;
-    el.onclick = () => selectTemplate(t.id);
-    el.dataset.id = t.id;
-    container.appendChild(el);
-  });
+킥오프 회의 - v2.0 업데이트
+날짜: 2025.04.07
 
-  renderMeetingList();
+1. 프로젝트 목표
+  - 전투 시스템 리뉴얼
+  - 신규 레이드 "용의 둥지" 추가
+  - 발키리 스킬 리밸런싱
+
+2. 일정
+  - 개발: 4/7 ~ 5/16 (6주)
+  - QA: 5/19 ~ 5/30 (2주)
+  - 라이브: 6/3 예정
+
+3. 담당
+  - 기획: 정과장 (레이드), 김대리 (밸런싱)
+  - 서버: 이선임 (전투 서버)
+  - 클라이언트: 박개발 (UI)
+  - 아트: 박리드 (에셋 관리)
+
+4. 미결
+  - 크로스서버 매칭 가능 여부
+  - 사운드 외주 계약`;
+
+let S={
+  curId:null,tpl:'kickoff',
+  meetings:JSON.parse(localStorage.getItem('sg_meetings')||'[]'),
+  dict:JSON.parse(localStorage.getItem('sg_dict')||'[]'),
+  ms:JSON.parse(localStorage.getItem('sg_ms')||'[{"version":"v2.0","name":"전투 시스템 리뉴얼"},{"version":"v2.1","name":"신규 던전 패치"},{"version":"v2.2","name":"길드 시스템 개편"}]'),
+  result:null,uploadedImg:null
+};
+
+function init(){
+  document.getElementById('mDate').value=new Date().toISOString().split('T')[0];
+  const c=document.getElementById('templateChips');
+  T.forEach(t=>{const el=document.createElement('button');el.className='chip'+(t.id===S.tpl?' active':'');el.textContent=t.icon+' '+t.label;el.onclick=()=>selTpl(t.id);el.dataset.id=t.id;c.appendChild(el);});
+  renderList();renderDict();renderMs();refreshMsSel();
+  const bar=document.getElementById('imageBar');
+  bar.addEventListener('dragover',e=>{e.preventDefault();bar.style.borderColor='var(--accent)';});
+  bar.addEventListener('dragleave',()=>{bar.style.borderColor='';});
+  bar.addEventListener('drop',e=>{e.preventDefault();bar.style.borderColor='';if(e.dataTransfer.files[0])processImg(e.dataTransfer.files[0]);});
+}
+function selTpl(id){S.tpl=id;document.querySelectorAll('.chip').forEach(c=>c.classList.toggle('active',c.dataset.id===id));}
+function switchTab(t){document.querySelectorAll('.sidebar-tab').forEach(e=>e.classList.toggle('active',e.dataset.tab===t));document.querySelectorAll('.sidebar-panel').forEach(p=>p.classList.remove('active'));document.getElementById('panel'+t.charAt(0).toUpperCase()+t.slice(1)).classList.add('active');}
+
+/* ── DICTIONARY ── */
+function saveDict(){localStorage.setItem('sg_dict',JSON.stringify(S.dict));}
+function renderDict(){
+  const l=document.getElementById('dictList');l.innerHTML='';
+  document.getElementById('dictCount').textContent=S.dict.length+'개';
+  S.dict.forEach((d,i)=>{const e=document.createElement('div');e.className='config-item';e.innerHTML=`<span class="config-item-name">${d.name}</span><span class="config-item-desc">${d.desc||''}</span><button class="config-item-del" onclick="delDict(${i})">✕</button>`;l.appendChild(e);});
+}
+function addDict(){
+  const n=document.getElementById('dictName').value.trim(),d=document.getElementById('dictDesc').value.trim();
+  if(!n){showToast('용어를 입력해주세요');return;}
+  S.dict.push({name:n,desc:d});saveDict();renderDict();
+  document.getElementById('dictName').value='';document.getElementById('dictDesc').value='';
+}
+function delDict(i){S.dict.splice(i,1);saveDict();renderDict();}
+
+function handleExcelUpload(e){
+  const file=e.target.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=function(ev){
+    try{
+      const wb=XLSX.read(ev.target.result,{type:'array'});
+      const ws=wb.Sheets[wb.SheetNames[0]];
+      const data=XLSX.utils.sheet_to_json(ws,{header:1});
+      let added=0;
+      const startRow=data[0]&&(typeof data[0][0]==='string')&&['용어','이름','name','term','명칭'].some(k=>data[0][0].toLowerCase().includes(k.toLowerCase()))?1:0;
+      for(let i=startRow;i<data.length;i++){
+        const row=data[i];if(!row||!row[0])continue;
+        const name=String(row[0]).trim();
+        const desc=row[1]?String(row[1]).trim():'';
+        if(name&&!S.dict.some(d=>d.name===name)){S.dict.push({name,desc});added++;}
+      }
+      saveDict();renderDict();
+      showToast(`📎 ${added}개 용어가 추가되었습니다`);
+    }catch(err){showToast('❌ 파일 읽기 실패: '+err.message);}
+  };
+  reader.readAsArrayBuffer(file);
+  e.target.value='';
 }
 
-function selectTemplate(id) {
-  state.template = id;
-  document.querySelectorAll('.chip').forEach(c => {
-    c.classList.toggle('active', c.dataset.id === id);
-  });
+/* ── MILESTONES ── */
+function saveMs(){localStorage.setItem('sg_ms',JSON.stringify(S.ms));}
+function renderMs(){
+  const l=document.getElementById('msList');l.innerHTML='';
+  document.getElementById('msCount').textContent=S.ms.length+'개';
+  S.ms.forEach((m,i)=>{const e=document.createElement('div');e.className='config-item';e.innerHTML=`<span class="ms-badge">${m.version}</span><span class="config-item-name">${m.name}</span><button class="config-item-del" onclick="delMs(${i})">✕</button>`;l.appendChild(e);});
+}
+function addMs(){
+  const v=document.getElementById('msVersion').value.trim(),n=document.getElementById('msName').value.trim();
+  if(!v||!n){showToast('버전과 이름 모두 입력해주세요');return;}
+  S.ms.push({version:v,name:n});saveMs();renderMs();refreshMsSel();
+  document.getElementById('msVersion').value='';document.getElementById('msName').value='';
+}
+function delMs(i){S.ms.splice(i,1);saveMs();renderMs();refreshMsSel();}
+function refreshMsSel(){
+  const sel=document.getElementById('mMilestone');sel.innerHTML='<option value="">마일스톤 (선택)</option>';
+  S.ms.forEach(m=>{const o=document.createElement('option');o.value=m.version;o.textContent=m.version+' — '+m.name;sel.appendChild(o);});
 }
 
-function saveMeetings() {
-  localStorage.setItem('minutesai_meetings', JSON.stringify(state.meetings));
+/* ── IMAGE → TEXT ── */
+function handleImage(e){if(e.target.files[0])processImg(e.target.files[0]);}
+async function processImg(file){
+  if(!file.type.startsWith('image/')){showToast('이미지 파일만 가능합니다');return;}
+  const reader=new FileReader();
+  reader.onload=async(ev)=>{
+    S.uploadedImg=ev.target.result;
+    const bar=document.getElementById('imageBar');
+    bar.classList.add('processing');
+    bar.innerHTML=`<img class="image-thumb" src="${ev.target.result}"><div class="drop-text">텍스트 인식 중...</div><div class="ocr-spinner"></div>`;
+    await new Promise(r=>setTimeout(r,1800));
+    const ta=document.getElementById('rawInput');
+    ta.value=OCR_DEMO;
+    updateCount();
+    bar.innerHTML=`<img class="image-thumb" src="${ev.target.result}"><div class="drop-text" style="color:var(--accent3);">✓ 텍스트 인식 완료 — 내용이 입력창에 반영되었습니다</div><button class="image-clear" onclick="event.stopPropagation();clearImg()">✕</button>`;
+    bar.classList.remove('processing');
+    showToast('🖼️ 이미지 텍스트가 입력창에 반영되었습니다');
+  };
+  reader.readAsDataURL(file);
+}
+function clearImg(){
+  S.uploadedImg=null;
+  const bar=document.getElementById('imageBar');
+  bar.innerHTML=`<span class="drop-icon">🖼️</span><div class="drop-text">이미지를 드래그하거나 <span>클릭하여 업로드</span>하면 텍스트를 자동 인식합니다</div>`;
+  document.getElementById('imgInput').value='';
 }
 
-function renderMeetingList() {
-  const list = document.getElementById('meetingList');
-  const empty = document.getElementById('emptyList');
-  const meetings = [...state.meetings].reverse();
+/* ── MEETINGS ── */
+function saveMeetings(){localStorage.setItem('sg_meetings',JSON.stringify(S.meetings));}
+function renderList(){
+  const l=document.getElementById('meetingList'),e=document.getElementById('emptyList'),ms=[...S.meetings].reverse();
+  if(!ms.length){e.style.display='block';l.querySelectorAll('.meeting-item').forEach(x=>x.remove());return;}
+  e.style.display='none';l.querySelectorAll('.meeting-item').forEach(x=>x.remove());
+  ms.forEach(m=>{const t=T.find(t=>t.id===m.template)||T[3];const el=document.createElement('div');el.className='meeting-item'+(m.id===S.curId?' active':'');el.innerHTML=`<div class="meeting-item-title">${m.title||'제목 없음'}</div><div class="meeting-item-meta"><span>${m.date||''}</span><span class="meeting-tag ${t.tag}">${t.icon} ${t.label}</span></div>`;el.onclick=()=>loadMeeting(m.id);l.appendChild(el);});
+}
+function newMeeting(){
+  S.curId=null;S.result=null;
+  document.getElementById('mTitle').value='';document.getElementById('mDate').value=new Date().toISOString().split('T')[0];
+  document.getElementById('mAttendees').value='';document.getElementById('mMilestone').value='';
+  document.getElementById('rawInput').value='';document.getElementById('topbarTitle').textContent='새 회의록';
+  selTpl('kickoff');updateCount();showEmpty();renderList();clearImg();
+}
+function loadMeeting(id){
+  const m=S.meetings.find(x=>x.id===id);if(!m)return;
+  S.curId=id;S.result=m.result;
+  document.getElementById('mTitle').value=m.title||'';document.getElementById('mDate').value=m.date||'';
+  document.getElementById('mAttendees').value=m.attendees||'';document.getElementById('mMilestone').value=m.milestone||'';
+  document.getElementById('rawInput').value=m.raw||'';document.getElementById('topbarTitle').textContent=m.title||'제목 없음';
+  selTpl(m.template||'kickoff');updateCount();
+  if(m.result)renderResult(m.result);renderList();
+}
+function saveMeeting(){
+  if(!S.result)return;
+  const title=document.getElementById('mTitle').value.trim()||'제목 없음';
+  const date=document.getElementById('mDate').value,att=document.getElementById('mAttendees').value.trim();
+  const ms=document.getElementById('mMilestone').value,raw=document.getElementById('rawInput').value.trim();
+  if(S.curId){const i=S.meetings.findIndex(m=>m.id===S.curId);if(i!==-1)S.meetings[i]={...S.meetings[i],title,date,attendees:att,milestone:ms,raw,template:S.tpl,result:S.result};}
+  else{const id=Date.now().toString();S.curId=id;S.meetings.push({id,title,date,attendees:att,milestone:ms,raw,template:S.tpl,result:S.result});}
+  saveMeetings();renderList();document.getElementById('topbarTitle').textContent=title;showToast('💾 저장되었습니다');
+}
+function deleteMeeting(){
+  if(!S.curId){showToast('삭제할 회의록이 없습니다');return;}
+  S.meetings=S.meetings.filter(m=>m.id!==S.curId);saveMeetings();newMeeting();showToast('🗑 삭제되었습니다');
+}
+function updateTitle(){document.getElementById('topbarTitle').textContent=document.getElementById('mTitle').value.trim()||'새 회의록';}
+function updateCount(){document.getElementById('charCount').textContent=document.getElementById('rawInput').value.length.toLocaleString()+'자';}
 
-  if (meetings.length === 0) {
-    empty.style.display = 'block';
-    list.querySelectorAll('.meeting-item').forEach(e => e.remove());
-    return;
-  }
-  empty.style.display = 'none';
-  list.querySelectorAll('.meeting-item').forEach(e => e.remove());
-
-  meetings.forEach(m => {
-    const t = TEMPLATES.find(t => t.id === m.template) || TEMPLATES[4];
-    const el = document.createElement('div');
-    el.className = 'meeting-item' + (m.id === state.currentId ? ' active' : '');
-    el.dataset.id = m.id;
-    el.innerHTML = `
-      <div class="meeting-item-title">${m.title || '제목 없음'}</div>
-      <div class="meeting-item-meta">
-        <span>${m.date || ''}</span>
-        <span class="meeting-tag ${t.tag}">${t.icon} ${t.label}</span>
-      </div>
-    `;
-    el.onclick = () => loadMeeting(m.id);
-    list.appendChild(el);
-  });
+/* ── GENERATE ── */
+async function generate(){
+  const raw=document.getElementById('rawInput').value.trim();
+  if(!raw){showToast('회의 내용을 입력해주세요');return;}
+  const date=document.getElementById('mDate').value,att=document.getElementById('mAttendees').value.trim(),ms=document.getElementById('mMilestone').value;
+  document.getElementById('genBtn').disabled=true;document.getElementById('genBtn').textContent='생성 중...';
+  document.getElementById('saveBtn').disabled=true;document.getElementById('statusDot').classList.remove('active');
+  document.getElementById('resultBody').innerHTML=`<div class="loading-state"><div class="spinner"></div><div class="loading-text">회의 내용 분석 중...</div><div class="loading-sub">명사집 ${S.dict.length}개 용어 · 마일스톤 ${S.ms.length}개 참조</div></div>`;
+  await new Promise(r=>setTimeout(r,1400+Math.random()*600));
+  const demo=JSON.parse(JSON.stringify(DEMO[S.tpl]||DEMO.general));
+  if(ms){demo.milestones=[ms];const m=S.ms.find(x=>x.version===ms);if(m)demo.summary=demo.summary.replace(/v2\.0/g,ms);}
+  S.result={...demo,date,attendees:att,template:S.tpl,raw};
+  renderResult(S.result);
+  document.getElementById('saveBtn').disabled=false;document.getElementById('statusDot').classList.add('active');
+  document.getElementById('genBtn').disabled=false;document.getElementById('genBtn').textContent='✦ 회의록 생성';
+  showToast('✦ 데모 회의록이 생성되었습니다');
 }
 
-function newMeeting() {
-  state.currentId = null;
-  state.result = null;
-  document.getElementById('meetingTitle').value = '';
-  document.getElementById('meetingDate').value = new Date().toISOString().split('T')[0];
-  document.getElementById('meetingAttendees').value = '';
-  document.getElementById('rawInput').value = '';
-  document.getElementById('topbarTitle').textContent = '새 회의록';
-  selectTemplate('general');
-  updateCharCount();
-  showEmptyResult();
-  renderMeetingList();
+/* ── RENDER RESULT ── */
+function showEmpty(){
+  document.getElementById('statusDot').classList.remove('active');document.getElementById('saveBtn').disabled=true;
+  document.getElementById('resultBody').innerHTML=`<div class="empty-state"><div class="empty-icon">✦</div><div class="empty-text">회의 내용을 입력하고 생성하세요<br><span style="font-size:11px;opacity:0.5;">데모 모드로 동작합니다</span></div></div>`;
 }
-
-function loadMeeting(id) {
-  const m = state.meetings.find(m => m.id === id);
-  if (!m) return;
-  state.currentId = id;
-  state.result = m.result;
-  document.getElementById('meetingTitle').value = m.title || '';
-  document.getElementById('meetingDate').value = m.date || '';
-  document.getElementById('meetingAttendees').value = m.attendees || '';
-  document.getElementById('rawInput').value = m.raw || '';
-  document.getElementById('topbarTitle').textContent = m.title || '제목 없음';
-  selectTemplate(m.template || 'general');
-  updateCharCount();
-  if (m.result) renderResult(m.result);
-  renderMeetingList();
+function renderResult(r){
+  const pl={high:'🔴 높음',mid:'🟡 중간',low:'🟢 낮음'},pc={high:'priority-high',mid:'priority-mid',low:'priority-low'};
+  const tpl=T.find(t=>t.id===r.template);
+  let h='<div class="result-content">';
+  h+=`<div class="result-meta"><div class="result-meta-item"><div class="result-meta-label">날짜</div><div class="result-meta-value">${r.date||'-'}</div></div><div class="result-meta-item"><div class="result-meta-label">유형</div><div class="result-meta-value">${tpl?.label||'-'}</div></div><div class="result-meta-item"><div class="result-meta-label">참석자</div><div class="result-meta-value">${r.attendees||'-'}</div></div></div>`;
+  if(r.milestones?.length){h+='<div style="display:flex;gap:6px;flex-wrap:wrap;">';r.milestones.forEach(ms=>{const f=S.ms.find(m=>m.version===ms);h+=`<span class="result-ms-tag">🏷️ ${ms}${f?' — '+f.name:''}</span>`;});h+='</div>';}
+  if(r.summary)h+=`<div class="result-section"><div class="result-section-title">요약</div><div class="summary-box">${r.summary}</div></div>`;
+  if(r.decisions?.length){h+=`<div class="result-section"><div class="result-section-title">✅ 결정사항</div>`;r.decisions.forEach(d=>h+=`<div class="result-item decision">${d}</div>`);h+='</div>';}
+  if(r.actions?.length){h+=`<div class="result-section"><div class="result-section-title">🎯 액션아이템</div>`;r.actions.forEach(a=>h+=`<div class="result-item action">${a.task}<div class="action-meta">${a.assignee?`<span class="action-badge assignee">👤 ${a.assignee}</span>`:''}${a.due?`<span class="action-badge due">📅 ${a.due}</span>`:''}${a.priority?`<span class="action-badge ${pc[a.priority]||''}">${pl[a.priority]||a.priority}</span>`:''}</div></div>`);h+='</div>';}
+  if(r.pending?.length){h+=`<div class="result-section"><div class="result-section-title">⏳ 보류/미결</div>`;r.pending.forEach(p=>h+=`<div class="result-item pending">${p}</div>`);h+='</div>';}
+  if(r.issues?.length){h+=`<div class="result-section"><div class="result-section-title">⚠️ 이슈/리스크</div>`;r.issues.forEach(i=>h+=`<div class="result-item issue">${i}</div>`);h+='</div>';}
+  if(r.nextMeeting)h+=`<div class="result-section"><div class="result-section-title">📅 다음 회의</div><div class="result-item note">${r.nextMeeting}</div></div>`;
+  h+='</div>';document.getElementById('resultBody').innerHTML=h;
 }
-
-function saveMeeting() {
-  if (!state.result) return;
-  const title = document.getElementById('meetingTitle').value.trim() || '제목 없음';
-  const date = document.getElementById('meetingDate').value;
-  const attendees = document.getElementById('meetingAttendees').value.trim();
-  const raw = document.getElementById('rawInput').value.trim();
-
-  if (state.currentId) {
-    const idx = state.meetings.findIndex(m => m.id === state.currentId);
-    if (idx !== -1) {
-      state.meetings[idx] = { ...state.meetings[idx], title, date, attendees, raw, template: state.template, result: state.result };
-    }
-  } else {
-    const id = Date.now().toString();
-    state.currentId = id;
-    state.meetings.push({ id, title, date, attendees, raw, template: state.template, result: state.result });
-  }
-  saveMeetings();
-  renderMeetingList();
-  document.getElementById('topbarTitle').textContent = title;
-  showToast('💾 저장되었습니다');
+function copyResult(){
+  if(!S.result){showToast('복사할 내용이 없습니다');return;}
+  const r=S.result,t=T.find(t=>t.id===r.template);
+  let x=`# ${document.getElementById('mTitle').value||'회의록'}\n날짜: ${r.date||''} | 유형: ${t?.label||''} | 참석자: ${r.attendees||''}\n`;
+  if(r.milestones?.length)x+=`마일스톤: ${r.milestones.join(', ')}\n`;x+='\n';
+  if(r.summary)x+=`## 요약\n${r.summary}\n\n`;
+  if(r.decisions?.length)x+=`## 결정사항\n${r.decisions.map(d=>'- '+d).join('\n')}\n\n`;
+  if(r.actions?.length)x+=`## 액션아이템\n${r.actions.map(a=>'- '+a.task+(a.assignee?' ('+a.assignee+')':'')+(a.due?' ~'+a.due:'')).join('\n')}\n\n`;
+  if(r.pending?.length)x+=`## 보류/미결\n${r.pending.map(p=>'- '+p).join('\n')}\n\n`;
+  if(r.issues?.length)x+=`## 이슈/리스크\n${r.issues.map(i=>'- '+i).join('\n')}\n\n`;
+  if(r.nextMeeting)x+=`## 다음 회의\n${r.nextMeeting}\n`;
+  navigator.clipboard.writeText(x).then(()=>showToast('📋 클립보드에 복사되었습니다'));
 }
-
-function deleteCurrentMeeting() {
-  if (!state.currentId) { showToast('삭제할 회의록이 없습니다'); return; }
-  state.meetings = state.meetings.filter(m => m.id !== state.currentId);
-  saveMeetings();
-  newMeeting();
-  showToast('🗑 삭제되었습니다');
-}
-
-function updateTitle() {
-  const t = document.getElementById('meetingTitle').value.trim();
-  document.getElementById('topbarTitle').textContent = t || '새 회의록';
-}
-
-function updateCharCount() {
-  const len = document.getElementById('rawInput').value.length;
-  document.getElementById('charCount').textContent = len.toLocaleString() + '자';
-}
-
-async function generate() {
-  const raw = document.getElementById('rawInput').value.trim();
-  if (!raw) { showToast('회의 내용을 입력해주세요'); return; }
-
-  const template = TEMPLATES.find(t => t.id === state.template);
-  const attendees = document.getElementById('meetingAttendees').value.trim();
-  const date = document.getElementById('meetingDate').value;
-
-  state.loading = true;
-  document.getElementById('generateBtn').disabled = true;
-  document.getElementById('generateBtn').textContent = '생성 중...';
-  document.getElementById('saveBtn').disabled = true;
-  document.getElementById('statusDot').classList.remove('active');
-  showLoading();
-
-  const systemPrompt = `당신은 게임 개발 회의록 전문 AI 어시스턴트입니다.
-아래 게임 개발 용어와 컨텍스트를 잘 이해합니다:
-- 개발: 빌드, 배포, 클라이언트, 서버, QA, 버그, 핫픽스, 패치, 마이그레이션, API, SDK
-- 기획: 밸런스, 스킬, 콘텐츠, 시나리오, UI/UX, 프로토타입, 게임플레이, 메타, 드롭률
-- 운영: 스프린트, 마일스톤, 칸반, 데드라인, 백로그, 포스트모템, KPI, DAU, 리텐션
-- 직군: 기획, 클라이언트, 서버, 아트, QA, PM, TA(테크아트), TD(테크디렉터)
-
-${template?.hint || ''}
-
-반드시 아래 JSON 형식으로만 응답하세요 (마크다운 코드블록 없이 순수 JSON):
-{
-  "summary": "한 문단 회의 전체 요약 (2-3문장)",
-  "decisions": ["결정사항1", "결정사항2"],
-  "actions": [
-    { "task": "태스크 내용", "assignee": "담당자 (없으면 null)", "due": "기한 (없으면 null)", "priority": "high|mid|low" }
-  ],
-  "pending": ["보류/미결사항1", "보류/미결사항2"],
-  "issues": ["리스크나 이슈사항1"],
-  "nextMeeting": "다음 회의 관련 언급 (없으면 null)"
-}`;
-
-  const userPrompt = `회의 유형: ${template?.label}
-날짜: ${date}
-참석자: ${attendees || '미입력'}
-
-[회의 내용]
-${raw}`;
-
-  try {
-    const res = await fetch('/api/generate', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ systemPrompt, userPrompt }),
-    });
-
-    const data = await res.json();
-    if (data.error) throw new Error(data.error);
-
-    const text = data.text || '';
-    const json = JSON.parse(text.replace(/```json|```/g, '').trim());
-    state.result = { ...json, date, attendees, template: state.template, raw };
-    renderResult(state.result);
-    document.getElementById('saveBtn').disabled = false;
-    document.getElementById('statusDot').classList.add('active');
-  } catch(e) {
-    showErrorResult(e.message);
-    showToast('❌ 오류: ' + e.message.slice(0, 60));
-  } finally {
-    state.loading = false;
-    document.getElementById('generateBtn').disabled = false;
-    document.getElementById('generateBtn').textContent = '✦ 회의록 생성';
-  }
-}
-
-function showLoading() {
-  document.getElementById('resultBody').innerHTML = `
-    <div class="loading-state">
-      <div class="spinner"></div>
-      <div class="loading-text">회의 내용 분석 중...</div>
-      <div class="loading-sub">GPT-4.1-mini가 게임 개발 용어를 인식하고 구조화합니다</div>
-    </div>`;
-}
-
-function showEmptyResult() {
-  document.getElementById('statusDot').classList.remove('active');
-  document.getElementById('saveBtn').disabled = true;
-  document.getElementById('resultBody').innerHTML = `
-    <div class="empty-state">
-      <div class="empty-icon">✦</div>
-      <div class="empty-text">회의 내용을 입력하고 생성하세요</div>
-    </div>`;
-}
-
-function showErrorResult(msg) {
-  document.getElementById('resultBody').innerHTML = `
-    <div class="empty-state">
-      <div class="empty-icon">⚠️</div>
-      <div class="empty-text" style="color:var(--warn)">${msg || '오류가 발생했습니다'}</div>
-    </div>`;
-}
-
-function renderResult(r) {
-  const priLabel = { high:'🔴 높음', mid:'🟡 중간', low:'🟢 낮음' };
-  const priClass = { high:'priority-high', mid:'priority-mid', low:'priority-low' };
-
-  let html = '<div class="result-content">';
-
-  html += `<div class="result-meta">
-    <div class="result-meta-item"><div class="result-meta-label">날짜</div><div class="result-meta-value">${r.date||'-'}</div></div>
-    <div class="result-meta-item"><div class="result-meta-label">유형</div><div class="result-meta-value">${TEMPLATES.find(t=>t.id===r.template)?.label||'-'}</div></div>
-    <div class="result-meta-item"><div class="result-meta-label">참석자</div><div class="result-meta-value">${r.attendees||'-'}</div></div>
-  </div>`;
-
-  if (r.summary) {
-    html += `<div class="result-section">
-      <div class="result-section-title">요약</div>
-      <div class="summary-box">${r.summary}</div>
-    </div>`;
-  }
-
-  if (r.decisions?.length) {
-    html += `<div class="result-section"><div class="result-section-title">✅ 결정사항</div>`;
-    r.decisions.forEach(d => {
-      html += `<div class="result-item decision">${d}</div>`;
-    });
-    html += '</div>';
-  }
-
-  if (r.actions?.length) {
-    html += `<div class="result-section"><div class="result-section-title">🎯 액션아이템</div>`;
-    r.actions.forEach(a => {
-      html += `<div class="result-item action">
-        ${a.task}
-        <div class="action-meta">
-          ${a.assignee ? `<span class="action-badge assignee">👤 ${a.assignee}</span>` : ''}
-          ${a.due ? `<span class="action-badge due">📅 ${a.due}</span>` : ''}
-          ${a.priority ? `<span class="action-badge ${priClass[a.priority]||''}">${priLabel[a.priority]||a.priority}</span>` : ''}
-        </div>
-      </div>`;
-    });
-    html += '</div>';
-  }
-
-  if (r.pending?.length) {
-    html += `<div class="result-section"><div class="result-section-title">⏳ 보류/미결</div>`;
-    r.pending.forEach(p => {
-      html += `<div class="result-item pending">${p}</div>`;
-    });
-    html += '</div>';
-  }
-
-  if (r.issues?.length) {
-    html += `<div class="result-section"><div class="result-section-title">⚠️ 이슈/리스크</div>`;
-    r.issues.forEach(i => {
-      html += `<div class="result-item issue">${i}</div>`;
-    });
-    html += '</div>';
-  }
-
-  if (r.nextMeeting) {
-    html += `<div class="result-section"><div class="result-section-title">📅 다음 회의</div>
-      <div class="result-item note">${r.nextMeeting}</div>
-    </div>`;
-  }
-
-  html += '</div>';
-  document.getElementById('resultBody').innerHTML = html;
-}
-
-function copyResult() {
-  if (!state.result) { showToast('복사할 내용이 없습니다'); return; }
-  const r = state.result;
-  const t = TEMPLATES.find(t=>t.id===r.template);
-  let text = `# ${document.getElementById('meetingTitle').value || '회의록'}\n`;
-  text += `날짜: ${r.date||''} | 유형: ${t?.label||''} | 참석자: ${r.attendees||''}\n\n`;
-  if(r.summary) text += `## 요약\n${r.summary}\n\n`;
-  if(r.decisions?.length) text += `## 결정사항\n${r.decisions.map(d=>`- ${d}`).join('\n')}\n\n`;
-  if(r.actions?.length) text += `## 액션아이템\n${r.actions.map(a=>`- ${a.task}${a.assignee?' ('+a.assignee+')':''}${a.due?' ~'+a.due:''}`).join('\n')}\n\n`;
-  if(r.pending?.length) text += `## 보류/미결\n${r.pending.map(p=>`- ${p}`).join('\n')}\n\n`;
-  if(r.issues?.length) text += `## 이슈/리스크\n${r.issues.map(i=>`- ${i}`).join('\n')}\n\n`;
-  if(r.nextMeeting) text += `## 다음 회의\n${r.nextMeeting}\n`;
-  navigator.clipboard.writeText(text).then(()=>showToast('📋 클립보드에 복사되었습니다'));
-}
-
-let toastTimer;
-function showToast(msg) {
-  clearTimeout(toastTimer);
-  let t = document.querySelector('.toast');
-  if(t) t.remove();
-  t = document.createElement('div');
-  t.className = 'toast';
-  t.textContent = msg;
-  document.body.appendChild(t);
-  toastTimer = setTimeout(()=>t.remove(), 2500);
-}
+let tt;function showToast(m){clearTimeout(tt);let t=document.querySelector('.toast');if(t)t.remove();t=document.createElement('div');t.className='toast';t.textContent=m;document.body.appendChild(t);tt=setTimeout(()=>t.remove(),2500);}
 
 init();
 </script>

@@ -170,10 +170,6 @@ body{font-family:'Noto Sans KR','DM Sans',sans-serif;background:var(--bg);color:
 .action-meta{display:flex;gap:6px;margin-top:4px;flex-wrap:wrap;}
 .action-badge{padding:1px 7px;border-radius:4px;font-size:10px;font-weight:600;}
 .action-badge.assignee{background:rgba(107,66,28,0.08);color:#8B5E3C;}
-.action-badge.due{background:rgba(42,158,111,0.08);color:var(--accent3);}
-.action-badge.priority-high{background:rgba(217,69,69,0.08);color:var(--warn);}
-.action-badge.priority-mid{background:rgba(232,168,48,0.1);color:#C08A20;}
-.action-badge.priority-low{background:rgba(42,158,111,0.08);color:var(--accent3);}
 
 /* 마크다운 스타일링 (summary-box 내부) */
 .summary-box{padding:12px 14px;background:var(--surface);border-radius:var(--radius-sm);border:1px solid var(--border);font-size:13px;color:var(--text);line-height:1.7;}
@@ -265,10 +261,12 @@ body{font-family:'Noto Sans KR','DM Sans',sans-serif;background:var(--bg);color:
           <div class="template-chips" id="templateChips"></div>
         </div>
         <div class="meta-row">
-          <input class="meta-input wide" id="mTitle" placeholder="회의 제목" oninput="updateTitle()">
-          <input class="meta-input" id="mDate" type="date">
+          <input class="meta-input wide" id="mTitle" placeholder="회의 제목" style="flex-basis: 100%; margin-bottom: 4px;" oninput="updateTitle()">
           
-          <select class="meta-select" id="mLocation">
+          <input class="meta-input" id="mAttendees" placeholder="참석자 (쉼표로 구분)" style="flex-basis: 100%;">
+          
+          <input class="meta-input" id="mDate" type="date" style="margin-top: 4px;">
+          <select class="meta-select" id="mLocation" style="margin-top: 4px;">
             <option value="">회의 장소 (선택)</option>
             <option value="노토스의섬">노토스의섬</option>
             <option value="다르카르">다르카르</option>
@@ -283,15 +281,12 @@ body{font-family:'Noto Sans KR','DM Sans',sans-serif;background:var(--bg);color:
             <option value="아이디스 미팅룸3">아이디스 미팅룸3</option>
             <option value="아이디스 미팅룸4">아이디스 미팅룸4</option>
           </select>
-          <select class="meta-select" id="mMilestone"><option value="">마일스톤 (선택)</option></select>
+          <select class="meta-select" id="mMilestone" style="margin-top: 4px;"><option value="">마일스톤 (선택)</option></select>
         </div>
         <div class="editor-body">
           <div class="input-label">회의 내용 입력</div>
           <textarea class="raw-textarea" id="rawInput" placeholder="회의 내용을 자유롭게 입력하세요.
 날것의 메모, 대화 내용, 키워드 나열 등 어떤 형식이든 괜찮습니다." oninput="updateCount()"></textarea>
-          
-          <div class="input-label" style="margin-top:4px;">참석자</div>
-          <input class="meta-input" id="mAttendees" placeholder="참석자를 입력하세요 (다수 입력 가능, 쉼표로 구분)" style="width:100%; flex-shrink:0;">
 
           <div class="image-drop-bar" id="imageBar" onclick="document.getElementById('imgInput').click()">
             <span class="drop-icon">🖼️</span>
@@ -324,18 +319,24 @@ body{font-family:'Noto Sans KR','DM Sans',sans-serif;background:var(--bg);color:
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script>
 const T=[
+  {id:'general',label:'일반 회의',icon:'💬',tag:'tag-general',hint:'결정사항, 액션아이템, 담당자, 기한, 보류 사항 위주로 정리해주세요.'},
   {id:'kickoff',label:'킥오프',icon:'🚀',tag:'tag-kickoff',hint:'프로젝트/스프린트 목표, 일정, 역할 분담, R&R, 주요 마일스톤, 리스크 위주로 정리해주세요.'},
   {id:'plan',label:'기획 리뷰',icon:'📐',tag:'tag-plan',hint:'기획 결정사항, 보류사항, 콘텐츠 수정 방향, 밸런스 논의, 후속 논의 사항 위주로 정리해주세요.'},
   {id:'dev',label:'개발 회의',icon:'⚙️',tag:'tag-dev',hint:'기술 결정사항, 구현 방향, 아키텍처 논의, 빌드/배포 일정, 기술 부채, 담당자/기한 위주로 정리해주세요.'},
-  {id:'general',label:'일반 회의',icon:'💬',tag:'tag-general',hint:'결정사항, 액션아이템, 담당자, 기한, 보류 사항 위주로 정리해주세요.'},
   {id:'qa',label:'QA 리뷰',icon:'🐛',tag:'tag-qa',hint:'버그 목록, 심각도, 재현 경로, 우선순위, 담당자, 해결 기한 위주로 정리해주세요.'},
 ];
 
+// 로컬 스토리지에 저장된 마일스톤이 과거 데이터라면 초기화
+if(!localStorage.getItem('sg_ms_version_2')) {
+  localStorage.setItem('sg_ms', JSON.stringify([{"version":"M28","name":"전체 마일스톤"},{"version":"M28_4월","name":"4월 마일스톤"},{"version":"M28_5월","name":"5월 마일스톤"},{"version":"M28_6월","name":"6월 마일스톤"}]));
+  localStorage.setItem('sg_ms_version_2', 'true');
+}
+
 let S={
-  curId:null,tpl:'kickoff',
+  curId:null,tpl:'general', // 기본 템플릿 변경
   meetings:JSON.parse(localStorage.getItem('sg_meetings')||'[]'),
   dict:JSON.parse(localStorage.getItem('sg_dict')||'[]'),
-  ms:JSON.parse(localStorage.getItem('sg_ms')||'[{"version":"M28","name":"전체 마일스톤"},{"version":"M28_4월","name":"4월 마일스톤"},{"version":"M28_5월","name":"5월 마일스톤"},{"version":"M28_6월","name":"6월 마일스톤"}]'),
+  ms:JSON.parse(localStorage.getItem('sg_ms')||'[]'),
   result:null,uploadedImg:null
 };
 
@@ -388,7 +389,7 @@ function renderList(){
   const l=document.getElementById('meetingList'),e=document.getElementById('emptyList'),ms=[...S.meetings].reverse();
   if(!ms.length){e.style.display='block';l.querySelectorAll('.meeting-item').forEach(x=>x.remove());return;}
   e.style.display='none';l.querySelectorAll('.meeting-item').forEach(x=>x.remove());
-  ms.forEach(m=>{const t=T.find(t=>t.id===m.template)||T[3];const el=document.createElement('div');el.className='meeting-item'+(m.id===S.curId?' active':'');el.innerHTML=`<div class="meeting-item-title">${m.title||'제목 없음'}</div><div class="meeting-item-meta"><span>${m.date||''}</span><span class="meeting-tag ${t.tag}">${t.icon} ${t.label}</span></div>`;el.onclick=()=>loadMeeting(m.id);l.appendChild(el);});
+  ms.forEach(m=>{const t=T.find(t=>t.id===m.template)||T[0];const el=document.createElement('div');el.className='meeting-item'+(m.id===S.curId?' active':'');el.innerHTML=`<div class="meeting-item-title">${m.title||'제목 없음'}</div><div class="meeting-item-meta"><span>${m.date||''}</span><span class="meeting-tag ${t.tag}">${t.icon} ${t.label}</span></div>`;el.onclick=()=>loadMeeting(m.id);l.appendChild(el);});
 }
 function newMeeting(){
   S.curId=null;S.result=null;
@@ -396,7 +397,7 @@ function newMeeting(){
   document.getElementById('mLocation').value='';
   document.getElementById('mAttendees').value='';document.getElementById('mMilestone').value='';
   document.getElementById('rawInput').value='';document.getElementById('topbarTitle').textContent='새 회의록';
-  selTpl('kickoff');updateCount();showEmpty();renderList();
+  selTpl('general');updateCount();showEmpty();renderList();
 }
 function loadMeeting(id){
   const m=S.meetings.find(x=>x.id===id);if(!m)return;
@@ -405,7 +406,7 @@ function loadMeeting(id){
   document.getElementById('mLocation').value=m.location||'';
   document.getElementById('mAttendees').value=m.attendees||'';document.getElementById('mMilestone').value=m.milestone||'';
   document.getElementById('rawInput').value=m.raw||'';document.getElementById('topbarTitle').textContent=m.title||'제목 없음';
-  selTpl(m.template||'kickoff');updateCount();
+  selTpl(m.template||'general');updateCount();
   if(m.result)renderResult(m.result);renderList();
 }
 function saveMeeting(){
@@ -487,7 +488,6 @@ function showEmpty(){
   document.getElementById('resultBody').innerHTML=`<div class="empty-state"><div class="empty-icon">✦</div><div class="empty-text">회의 내용을 입력하고 생성하세요<br><span style="font-size:11px;opacity:0.5;">LIVE API와 연결되었습니다</span></div></div>`;
 }
 
-// AI가 문자열이 아닌 배열을 반환했을 경우를 위한 방어용 파서
 function safeParseString(val, isList = false) {
   if (!val) return '';
   if (Array.isArray(val)) {
@@ -498,7 +498,6 @@ function safeParseString(val, isList = false) {
 }
 
 function renderResult(r){
-  const pl={high:'🔴 높음',mid:'🟡 중간',low:'🟢 낮음'},pc={high:'priority-high',mid:'priority-mid',low:'priority-low'};
   const tpl=T.find(t=>t.id===r.template);
   let h='<div class="result-content">';
   
@@ -511,16 +510,44 @@ function renderResult(r){
       
   if(r.milestones?.length){h+='<div style="display:flex;gap:6px;flex-wrap:wrap;">';r.milestones.forEach(ms=>{const f=S.ms.find(m=>m.version===ms);h+=`<span class="result-ms-tag">🏷️ ${ms}${f?' — '+f.name:''}</span>`;});h+='</div>';}
   
-  // 배열 방어 코드 적용
   const kpStr = safeParseString(r.keyPoints, true);
-  const fsStr = safeParseString(r.fullSummary);
+  const fsStr = safeParseString(r.fullSummary, true); // 줄글 금지, 회의록 형식(리스트)으로 렌더링
   const etcStr = safeParseString(r.etc);
 
   if(kpStr) h+=`<div class="result-section"><div class="result-section-title">💡 핵심 요약</div><div class="summary-box">${marked.parse(kpStr)}</div></div>`;
-  if(fsStr) h+=`<div class="result-section"><div class="result-section-title">📝 전체 내용 요약</div><div class="result-item note">${fsStr.replace(/\n/g, '<br>')}</div></div>`;
+  
+  // 전체 내용 요약도 마크다운 파싱을 태워 계층형 리스트로 예쁘게 보여줌
+  if(fsStr) h+=`<div class="result-section"><div class="result-section-title">📝 전체 내용 요약</div><div class="summary-box">${marked.parse(fsStr)}</div></div>`;
   
   if(r.decisions?.length){h+=`<div class="result-section"><div class="result-section-title">✅ 결정사항</div>`;r.decisions.forEach(d=>h+=`<div class="result-item decision">${d}</div>`);h+='</div>';}
-  if(r.followUps?.length){h+=`<div class="result-section"><div class="result-section-title">🎯 후속 진행</div>`;r.followUps.forEach(a=>h+=`<div class="result-item action">${a.task}<div class="action-meta">${a.assignee?`<span class="action-badge assignee">👤 ${a.assignee}</span>`:''}${a.due?`<span class="action-badge due">📅 ${a.due}</span>`:''}${a.priority?`<span class="action-badge ${pc[a.priority]||''}">${pl[a.priority]||a.priority}</span>`:''}</div></div>`);h+='</div>';}
+  
+  // 부서별 후속 진행 렌더링
+  if(r.followUps && Object.keys(r.followUps).length > 0){
+    h+=`<div class="result-section"><div class="result-section-title">🎯 후속 진행</div>`;
+    
+    // 기획실, 개발실, 개발관리실, AI센터 순서대로 렌더링
+    const depts = [
+      { key: 'planning', label: '기획실', color: '#6B42B4', bg: 'rgba(107,66,180,0.1)' },
+      { key: 'development', label: '개발실', color: '#2A78BE', bg: 'rgba(42,120,190,0.1)' },
+      { key: 'management', label: '개발관리실', color: '#C85A18', bg: 'rgba(200,90,24,0.1)' },
+      { key: 'ai', label: 'AI센터', color: '#2A9E6F', bg: 'rgba(42,158,111,0.1)' }
+    ];
+
+    depts.forEach(dept => {
+      const items = r.followUps[dept.key];
+      if (items && items.length > 0) {
+        h += `<div style="margin-top: 6px; font-size: 12px; font-weight: 700; color: ${dept.color};">${dept.label}</div>`;
+        items.forEach(a => {
+          h += `<div class="result-item action" style="border-left-color: ${dept.color};">
+                  ${a.task}
+                  ${a.assignee ? `<div class="action-meta"><span class="action-badge assignee" style="background:${dept.bg}; color:${dept.color};">👤 담당: ${a.assignee}</span></div>` : ''}
+                </div>`;
+        });
+      }
+    });
+    h+='</div>';
+  }
+  
   if(r.issues?.length){h+=`<div class="result-section"><div class="result-section-title">⚠️ 이슈/리스크</div>`;r.issues.forEach(i=>h+=`<div class="result-item issue">${i}</div>`);h+='</div>';}
   
   if(etcStr) h+=`<div class="result-section"><div class="result-section-title">💬 기타</div><div class="result-item note">${etcStr.replace(/\n/g, '<br>')}</div></div>`;
@@ -534,7 +561,7 @@ async function copyResult(){
   const r=S.result, t=T.find(t=>t.id===r.template);
   
   const kpStr = safeParseString(r.keyPoints, true);
-  const fsStr = safeParseString(r.fullSummary);
+  const fsStr = safeParseString(r.fullSummary, true);
   const etcStr = safeParseString(r.etc);
 
   // 1. 일반 마크다운 텍스트 버전
@@ -545,7 +572,19 @@ async function copyResult(){
   if(kpStr) plainText+=`## 핵심 요약\n${kpStr}\n\n`;
   if(fsStr) plainText+=`## 전체 내용 요약\n${fsStr}\n\n`;
   if(r.decisions?.length) plainText+=`## 결정사항\n${r.decisions.map(d=>'- '+d).join('\n')}\n\n`;
-  if(r.followUps?.length) plainText+=`## 후속 진행\n${r.followUps.map(a=>'- '+a.task+(a.assignee?' ('+a.assignee+')':'')+(a.due?' ~'+a.due:'')).join('\n')}\n\n`;
+  
+  if(r.followUps && Object.keys(r.followUps).length > 0){
+    plainText += `## 후속 진행\n`;
+    const depts = [{key:'planning', label:'기획실'}, {key:'development', label:'개발실'}, {key:'management', label:'개발관리실'}, {key:'ai', label:'AI센터'}];
+    depts.forEach(dept => {
+      if(r.followUps[dept.key] && r.followUps[dept.key].length > 0) {
+        plainText += `### ${dept.label}\n`;
+        r.followUps[dept.key].forEach(a => { plainText += `- ${a.task} ${a.assignee ? `(담당: ${a.assignee})` : ''}\n`; });
+      }
+    });
+    plainText += '\n';
+  }
+
   if(r.issues?.length) plainText+=`## 이슈/리스크\n${r.issues.map(i=>'- '+i).join('\n')}\n\n`;
   if(etcStr) plainText+=`## 기타\n${etcStr}\n`;
 
@@ -572,7 +611,7 @@ async function copyResult(){
   `;
 
   if(kpStr) htmlText += `<h2 style="color: #172b4d;">💡 핵심 요약</h2><div>${marked.parse(kpStr)}</div>`;
-  if(fsStr) htmlText += `<h2 style="color: #172b4d;">📝 전체 내용 요약</h2><p>${fsStr.replace(/\n/g, '<br>')}</p>`;
+  if(fsStr) htmlText += `<h2 style="color: #172b4d;">📝 전체 내용 요약</h2><div>${marked.parse(fsStr)}</div>`;
   
   if(r.decisions?.length) {
     htmlText += `<h2 style="color: #172b4d;">✅ 결정사항</h2><ul>`;
@@ -580,20 +619,18 @@ async function copyResult(){
     htmlText += `</ul>`;
   }
   
-  if(r.followUps?.length) {
-    htmlText += `<h2 style="color: #172b4d;">🎯 후속 진행 (액션아이템)</h2><ul>`;
-    r.followUps.forEach(a => {
-      let meta = [];
-      if(a.assignee) meta.push(`<strong>담당:</strong> <span style="color: #0052cc;">${a.assignee}</span>`);
-      if(a.due) meta.push(`<strong>기한:</strong> <span style="color: #00875a;">${a.due}</span>`);
-      if(a.priority) {
-        let pColor = a.priority === 'high' ? '#de350b' : (a.priority === 'mid' ? '#ff991f' : '#00875a');
-        let pText = a.priority === 'high' ? '높음' : (a.priority === 'mid' ? '중간' : '낮음');
-        meta.push(`<strong>우선순위:</strong> <span style="color:${pColor};">${pText}</span>`);
+  if(r.followUps && Object.keys(r.followUps).length > 0) {
+    htmlText += `<h2 style="color: #172b4d;">🎯 후속 진행</h2>`;
+    const depts = [{key:'planning', label:'기획실', color:'#6B42B4'}, {key:'development', label:'개발실', color:'#2A78BE'}, {key:'management', label:'개발관리실', color:'#C85A18'}, {key:'ai', label:'AI센터', color:'#2A9E6F'}];
+    depts.forEach(dept => {
+      if(r.followUps[dept.key] && r.followUps[dept.key].length > 0) {
+        htmlText += `<h3 style="color: ${dept.color}; font-size: 14px; margin-top: 10px;">${dept.label}</h3><ul>`;
+        r.followUps[dept.key].forEach(a => {
+          htmlText += `<li style="margin-bottom: 4px;">${a.task} ${a.assignee ? `<span style="color: #5e6c84; font-size: 12px;">(담당: ${a.assignee})</span>` : ''}</li>`;
+        });
+        htmlText += `</ul>`;
       }
-      htmlText += `<li style="margin-bottom: 6px;">${a.task} ${meta.length > 0 ? `<br><span style="font-size: 12px; color: #5e6c84;">(${meta.join(' | ')})</span>` : ''}</li>`;
     });
-    htmlText += `</ul>`;
   }
   
   if(r.issues?.length) {
@@ -604,7 +641,7 @@ async function copyResult(){
   
   if(etcStr) htmlText += `<h2 style="color: #172b4d;">💬 기타</h2><p>${etcStr.replace(/\n/g, '<br>')}</p>`;
 
-  // 3. 브라우저 API를 이용해 클립보드에 HTML, Plain 텍스트 동시 복사
+  // 3. 복사 실행
   try {
     const clipboardItem = new ClipboardItem({
       'text/plain': new Blob([plainText], { type: 'text/plain' }),
@@ -613,7 +650,6 @@ async function copyResult(){
     await navigator.clipboard.write([clipboardItem]);
     showToast('📋 컨플루언스 위키용 서식으로 복사되었습니다');
   } catch (err) {
-    console.warn("ClipboardItem API 미지원 브라우저입니다. 일반 텍스트로 복사합니다.");
     navigator.clipboard.writeText(plainText).then(()=>showToast('📋 텍스트로 복사되었습니다'));
   }
 }

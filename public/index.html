@@ -174,7 +174,15 @@ body{font-family:'Noto Sans KR','DM Sans',sans-serif;background:var(--bg);color:
 .action-badge.priority-high{background:rgba(217,69,69,0.08);color:var(--warn);}
 .action-badge.priority-mid{background:rgba(232,168,48,0.1);color:#C08A20;}
 .action-badge.priority-low{background:rgba(42,158,111,0.08);color:var(--accent3);}
-.summary-box{padding:12px 14px;background:var(--accent-light);border-radius:var(--radius-sm);border:1px solid rgba(224,107,32,0.15);font-size:13px;color:var(--text2);line-height:1.7;}
+
+/* 마크다운 스타일링 (summary-box 내부) */
+.summary-box{padding:12px 14px;background:var(--surface);border-radius:var(--radius-sm);border:1px solid var(--border);font-size:13px;color:var(--text);line-height:1.7;}
+.summary-box h1, .summary-box h2, .summary-box h3 {font-size:14px; font-weight:700; margin-bottom:6px; color:var(--text);}
+.summary-box p {margin-bottom:8px;}
+.summary-box ul, .summary-box ol {margin-left:20px; margin-bottom:8px;}
+.summary-box li {margin-bottom:4px;}
+.summary-box strong {color:var(--accent); font-weight:700;}
+
 .result-footer{padding:12px 20px;border-top:1px solid var(--border);display:flex;gap:8px;flex-shrink:0;}
 .btn-copy,.btn-save{flex:1;padding:8px 14px;border-radius:var(--radius-sm);font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;transition:all 0.15s;font-family:inherit;}
 .btn-copy{background:transparent;border:1px solid var(--border2);color:var(--text2);}
@@ -235,7 +243,7 @@ body{font-family:'Noto Sans KR','DM Sans',sans-serif;background:var(--bg);color:
         <div class="config-desc">운용 중인 마일스톤을 등록하면 회의 내용에서 자동 태깅됩니다.</div>
         <div class="config-add-row">
           <input class="config-input" id="msVersion" placeholder="버전" style="width:55px;flex:none">
-          <input class="config-input" id="msName" placeholder="이름 (예: 신규 던전 패치)">
+          <input class="config-input" id="msName" placeholder="이름 (예: 4월 마일스톤)">
           <button class="btn-config" onclick="addMs()">추가</button>
         </div>
         <div class="config-list" id="msList"></div>
@@ -259,19 +267,32 @@ body{font-family:'Noto Sans KR','DM Sans',sans-serif;background:var(--bg);color:
         <div class="meta-row">
           <input class="meta-input wide" id="mTitle" placeholder="회의 제목" oninput="updateTitle()">
           <input class="meta-input" id="mDate" type="date">
-          <input class="meta-input" id="mAttendees" placeholder="참석자" style="width:160px">
+          
+          <select class="meta-select" id="mLocation">
+            <option value="">회의 장소 (선택)</option>
+            <option value="노토스의섬">노토스의섬</option>
+            <option value="다르카르">다르카르</option>
+            <option value="리니아">리니아</option>
+            <option value="메르시아">메르시아</option>
+            <option value="플레체">플레체</option>
+            <option value="기약의섬">기약의섬</option>
+            <option value="스피다섬">스피다섬</option>
+            <option value="하얀파도섬">하얀파도섬</option>
+            <option value="아이디스 미팅룸1">아이디스 미팅룸1</option>
+            <option value="아이디스 미팅룸2">아이디스 미팅룸2</option>
+            <option value="아이디스 미팅룸3">아이디스 미팅룸3</option>
+            <option value="아이디스 미팅룸4">아이디스 미팅룸4</option>
+          </select>
           <select class="meta-select" id="mMilestone"><option value="">마일스톤 (선택)</option></select>
         </div>
         <div class="editor-body">
           <div class="input-label">회의 내용 입력</div>
           <textarea class="raw-textarea" id="rawInput" placeholder="회의 내용을 자유롭게 입력하세요.
-날것의 메모, 대화 내용, 키워드 나열 등 어떤 형식이든 괜찮습니다.
+날것의 메모, 대화 내용, 키워드 나열 등 어떤 형식이든 괜찮습니다." oninput="updateCount()"></textarea>
+          
+          <div class="input-label" style="margin-top:4px;">참석자</div>
+          <input class="meta-input" id="mAttendees" placeholder="참석자를 입력하세요 (다수 입력 가능, 쉼표로 구분)" style="width:100%; flex-shrink:0;">
 
-예시)
-- 킥오프: 프로젝트 목표, 일정, R&R 논의
-- 기획팀 김대리: 발키리 궁극기 쿨타임 조정 필요
-- QA팀: 인벤토리 버그 재현됨 (iOS 14 이하)
-- 미결: 드롭률 수치 확정 안됨" oninput="updateCount()"></textarea>
           <div class="image-drop-bar" id="imageBar" onclick="document.getElementById('imgInput').click()">
             <span class="drop-icon">🖼️</span>
             <div class="drop-text">이미지를 드래그하거나 <span>클릭하여 업로드</span>하면 텍스트를 자동 인식합니다</div>
@@ -299,6 +320,7 @@ body{font-family:'Noto Sans KR','DM Sans',sans-serif;background:var(--bg);color:
   </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script>
 const T=[
@@ -309,36 +331,12 @@ const T=[
   {id:'qa',label:'QA 리뷰',icon:'🐛',tag:'tag-qa',hint:'버그 목록, 심각도, 재현 경로, 우선순위, 담당자, 해결 기한 위주로 정리해주세요.'},
 ];
 
-const OCR_DEMO=`[이미지에서 추출된 텍스트]
-
-킥오프 회의 - v2.0 업데이트
-날짜: 2025.04.07
-
-1. 프로젝트 목표
-  - 전투 시스템 리뉴얼
-  - 신규 레이드 "용의 둥지" 추가
-  - 발키리 스킬 리밸런싱
-
-2. 일정
-  - 개발: 4/7 ~ 5/16 (6주)
-  - QA: 5/19 ~ 5/30 (2주)
-  - 라이브: 6/3 예정
-
-3. 담당
-  - 기획: 정과장 (레이드), 김대리 (밸런싱)
-  - 서버: 이선임 (전투 서버)
-  - 클라이언트: 박개발 (UI)
-  - 아트: 박리드 (에셋 관리)
-
-4. 미결
-  - 크로스서버 매칭 가능 여부
-  - 사운드 외주 계약`;
-
 let S={
   curId:null,tpl:'kickoff',
   meetings:JSON.parse(localStorage.getItem('sg_meetings')||'[]'),
   dict:JSON.parse(localStorage.getItem('sg_dict')||'[]'),
-  ms:JSON.parse(localStorage.getItem('sg_ms')||'[{"version":"v2.0","name":"전투 시스템 리뉴얼"},{"version":"v2.1","name":"신규 던전 패치"},{"version":"v2.2","name":"길드 시스템 개편"}]'),
+  // 요청하신 마일스톤 기본값 세팅
+  ms:JSON.parse(localStorage.getItem('sg_ms')||'[{"version":"M28","name":"전체 마일스톤"},{"version":"M28_4월","name":"4월 마일스톤"},{"version":"M28_5월","name":"5월 마일스톤"},{"version":"M28_6월","name":"6월 마일스톤"}]'),
   result:null,uploadedImg:null
 };
 
@@ -347,10 +345,6 @@ function init(){
   const c=document.getElementById('templateChips');
   T.forEach(t=>{const el=document.createElement('button');el.className='chip'+(t.id===S.tpl?' active':'');el.textContent=t.icon+' '+t.label;el.onclick=()=>selTpl(t.id);el.dataset.id=t.id;c.appendChild(el);});
   renderList();renderDict();renderMs();refreshMsSel();
-  const bar=document.getElementById('imageBar');
-  bar.addEventListener('dragover',e=>{e.preventDefault();bar.style.borderColor='var(--accent)';});
-  bar.addEventListener('dragleave',()=>{bar.style.borderColor='';});
-  bar.addEventListener('drop',e=>{e.preventDefault();bar.style.borderColor='';if(e.dataTransfer.files[0])processImg(e.dataTransfer.files[0]);});
 }
 function selTpl(id){S.tpl=id;document.querySelectorAll('.chip').forEach(c=>c.classList.toggle('active',c.dataset.id===id));}
 function switchTab(t){document.querySelectorAll('.sidebar-tab').forEach(e=>e.classList.toggle('active',e.dataset.tab===t));document.querySelectorAll('.sidebar-panel').forEach(p=>p.classList.remove('active'));document.getElementById('panel'+t.charAt(0).toUpperCase()+t.slice(1)).classList.add('active');}
@@ -369,30 +363,6 @@ function addDict(){
   document.getElementById('dictName').value='';document.getElementById('dictDesc').value='';
 }
 function delDict(i){S.dict.splice(i,1);saveDict();renderDict();}
-
-function handleExcelUpload(e){
-  const file=e.target.files[0];if(!file)return;
-  const reader=new FileReader();
-  reader.onload=function(ev){
-    try{
-      const wb=XLSX.read(ev.target.result,{type:'array'});
-      const ws=wb.Sheets[wb.SheetNames[0]];
-      const data=XLSX.utils.sheet_to_json(ws,{header:1});
-      let added=0;
-      const startRow=data[0]&&(typeof data[0][0]==='string')&&['용어','이름','name','term','명칭'].some(k=>data[0][0].toLowerCase().includes(k.toLowerCase()))?1:0;
-      for(let i=startRow;i<data.length;i++){
-        const row=data[i];if(!row||!row[0])continue;
-        const name=String(row[0]).trim();
-        const desc=row[1]?String(row[1]).trim():'';
-        if(name&&!S.dict.some(d=>d.name===name)){S.dict.push({name,desc});added++;}
-      }
-      saveDict();renderDict();
-      showToast(`📎 ${added}개 용어가 추가되었습니다`);
-    }catch(err){showToast('❌ 파일 읽기 실패: '+err.message);}
-  };
-  reader.readAsArrayBuffer(file);
-  e.target.value='';
-}
 
 /* ── MILESTONES ── */
 function saveMs(){localStorage.setItem('sg_ms',JSON.stringify(S.ms));}
@@ -413,33 +383,6 @@ function refreshMsSel(){
   S.ms.forEach(m=>{const o=document.createElement('option');o.value=m.version;o.textContent=m.version+' — '+m.name;sel.appendChild(o);});
 }
 
-/* ── IMAGE → TEXT ── */
-function handleImage(e){if(e.target.files[0])processImg(e.target.files[0]);}
-async function processImg(file){
-  if(!file.type.startsWith('image/')){showToast('이미지 파일만 가능합니다');return;}
-  const reader=new FileReader();
-  reader.onload=async(ev)=>{
-    S.uploadedImg=ev.target.result;
-    const bar=document.getElementById('imageBar');
-    bar.classList.add('processing');
-    bar.innerHTML=`<img class="image-thumb" src="${ev.target.result}"><div class="drop-text">텍스트 인식 중...</div><div class="ocr-spinner"></div>`;
-    await new Promise(r=>setTimeout(r,1800));
-    const ta=document.getElementById('rawInput');
-    ta.value=OCR_DEMO;
-    updateCount();
-    bar.innerHTML=`<img class="image-thumb" src="${ev.target.result}"><div class="drop-text" style="color:var(--accent3);">✓ 텍스트 인식 완료 — 내용이 입력창에 반영되었습니다</div><button class="image-clear" onclick="event.stopPropagation();clearImg()">✕</button>`;
-    bar.classList.remove('processing');
-    showToast('🖼️ 이미지 텍스트가 입력창에 반영되었습니다');
-  };
-  reader.readAsDataURL(file);
-}
-function clearImg(){
-  S.uploadedImg=null;
-  const bar=document.getElementById('imageBar');
-  bar.innerHTML=`<span class="drop-icon">🖼️</span><div class="drop-text">이미지를 드래그하거나 <span>클릭하여 업로드</span>하면 텍스트를 자동 인식합니다</div>`;
-  document.getElementById('imgInput').value='';
-}
-
 /* ── MEETINGS ── */
 function saveMeetings(){localStorage.setItem('sg_meetings',JSON.stringify(S.meetings));}
 function renderList(){
@@ -451,14 +394,16 @@ function renderList(){
 function newMeeting(){
   S.curId=null;S.result=null;
   document.getElementById('mTitle').value='';document.getElementById('mDate').value=new Date().toISOString().split('T')[0];
+  document.getElementById('mLocation').value='';
   document.getElementById('mAttendees').value='';document.getElementById('mMilestone').value='';
   document.getElementById('rawInput').value='';document.getElementById('topbarTitle').textContent='새 회의록';
-  selTpl('kickoff');updateCount();showEmpty();renderList();clearImg();
+  selTpl('kickoff');updateCount();showEmpty();renderList();
 }
 function loadMeeting(id){
   const m=S.meetings.find(x=>x.id===id);if(!m)return;
   S.curId=id;S.result=m.result;
   document.getElementById('mTitle').value=m.title||'';document.getElementById('mDate').value=m.date||'';
+  document.getElementById('mLocation').value=m.location||'';
   document.getElementById('mAttendees').value=m.attendees||'';document.getElementById('mMilestone').value=m.milestone||'';
   document.getElementById('rawInput').value=m.raw||'';document.getElementById('topbarTitle').textContent=m.title||'제목 없음';
   selTpl(m.template||'kickoff');updateCount();
@@ -467,10 +412,12 @@ function loadMeeting(id){
 function saveMeeting(){
   if(!S.result)return;
   const title=document.getElementById('mTitle').value.trim()||'제목 없음';
-  const date=document.getElementById('mDate').value,att=document.getElementById('mAttendees').value.trim();
+  const date=document.getElementById('mDate').value;
+  const loc=document.getElementById('mLocation').value;
+  const att=document.getElementById('mAttendees').value.trim();
   const ms=document.getElementById('mMilestone').value,raw=document.getElementById('rawInput').value.trim();
-  if(S.curId){const i=S.meetings.findIndex(m=>m.id===S.curId);if(i!==-1)S.meetings[i]={...S.meetings[i],title,date,attendees:att,milestone:ms,raw,template:S.tpl,result:S.result};}
-  else{const id=Date.now().toString();S.curId=id;S.meetings.push({id,title,date,attendees:att,milestone:ms,raw,template:S.tpl,result:S.result});}
+  if(S.curId){const i=S.meetings.findIndex(m=>m.id===S.curId);if(i!==-1)S.meetings[i]={...S.meetings[i],title,date,location:loc,attendees:att,milestone:ms,raw,template:S.tpl,result:S.result};}
+  else{const id=Date.now().toString();S.curId=id;S.meetings.push({id,title,date,location:loc,attendees:att,milestone:ms,raw,template:S.tpl,result:S.result});}
   saveMeetings();renderList();document.getElementById('topbarTitle').textContent=title;showToast('💾 저장되었습니다');
 }
 function deleteMeeting(){
@@ -486,6 +433,7 @@ async function generate(){
   if(!raw){showToast('회의 내용을 입력해주세요');return;}
   
   const date=document.getElementById('mDate').value;
+  const loc=document.getElementById('mLocation').value;
   const att=document.getElementById('mAttendees').value.trim();
   const ms=document.getElementById('mMilestone').value;
 
@@ -513,11 +461,11 @@ async function generate(){
       })
     });
 
-    if (!response.ok) throw new Error('API 호출에 실패했습니다.');
-    
     const aiData = await response.json();
+    if (!response.ok) throw new Error(aiData.error || 'API 호출에 실패했습니다.');
 
-    S.result = { ...aiData, date, attendees: att, template: S.tpl, raw };
+    // 받아온 데이터를 result 객체에 저장 (장소 포함)
+    S.result = { ...aiData, date, location: loc, attendees: att, template: S.tpl, raw };
     if(ms) S.result.milestones = [ms];
 
     renderResult(S.result);
@@ -544,27 +492,53 @@ function renderResult(r){
   const pl={high:'🔴 높음',mid:'🟡 중간',low:'🟢 낮음'},pc={high:'priority-high',mid:'priority-mid',low:'priority-low'};
   const tpl=T.find(t=>t.id===r.template);
   let h='<div class="result-content">';
-  h+=`<div class="result-meta"><div class="result-meta-item"><div class="result-meta-label">날짜</div><div class="result-meta-value">${r.date||'-'}</div></div><div class="result-meta-item"><div class="result-meta-label">유형</div><div class="result-meta-value">${tpl?.label||'-'}</div></div><div class="result-meta-item"><div class="result-meta-label">참석자</div><div class="result-meta-value">${r.attendees||'-'}</div></div></div>`;
+  
+  // 메타 정보 (날짜, 장소, 유형, 참석자)
+  h+=`<div class="result-meta">
+        <div class="result-meta-item"><div class="result-meta-label">날짜</div><div class="result-meta-value">${r.date||'-'}</div></div>
+        <div class="result-meta-item"><div class="result-meta-label">장소</div><div class="result-meta-value">${r.location||'-'}</div></div>
+        <div class="result-meta-item"><div class="result-meta-label">유형</div><div class="result-meta-value">${tpl?.label||'-'}</div></div>
+        <div class="result-meta-item" style="flex-basis: 100%; margin-top:4px;"><div class="result-meta-label">참석자</div><div class="result-meta-value">${r.attendees||'-'}</div></div>
+      </div>`;
+      
   if(r.milestones?.length){h+='<div style="display:flex;gap:6px;flex-wrap:wrap;">';r.milestones.forEach(ms=>{const f=S.ms.find(m=>m.version===ms);h+=`<span class="result-ms-tag">🏷️ ${ms}${f?' — '+f.name:''}</span>`;});h+='</div>';}
-  if(r.summary)h+=`<div class="result-section"><div class="result-section-title">요약</div><div class="summary-box">${r.summary}</div></div>`;
+  
+  // 요약 -> 핵심 요약 (마크다운)
+  if(r.keyPoints) h+=`<div class="result-section"><div class="result-section-title">💡 핵심 요약</div><div class="summary-box">${marked.parse(r.keyPoints)}</div></div>`;
+  
+  // 보류/미결 -> 전체 내용 요약
+  if(r.fullSummary) h+=`<div class="result-section"><div class="result-section-title">📝 전체 내용 요약</div><div class="result-item note">${r.fullSummary.replace(/\n/g, '<br>')}</div></div>`;
+  
+  // 결정사항
   if(r.decisions?.length){h+=`<div class="result-section"><div class="result-section-title">✅ 결정사항</div>`;r.decisions.forEach(d=>h+=`<div class="result-item decision">${d}</div>`);h+='</div>';}
-  if(r.actions?.length){h+=`<div class="result-section"><div class="result-section-title">🎯 액션아이템</div>`;r.actions.forEach(a=>h+=`<div class="result-item action">${a.task}<div class="action-meta">${a.assignee?`<span class="action-badge assignee">👤 ${a.assignee}</span>`:''}${a.due?`<span class="action-badge due">📅 ${a.due}</span>`:''}${a.priority?`<span class="action-badge ${pc[a.priority]||''}">${pl[a.priority]||a.priority}</span>`:''}</div></div>`);h+='</div>';}
-  if(r.pending?.length){h+=`<div class="result-section"><div class="result-section-title">⏳ 보류/미결</div>`;r.pending.forEach(p=>h+=`<div class="result-item pending">${p}</div>`);h+='</div>';}
+  
+  // 액션아이템 -> 후속 진행
+  if(r.followUps?.length){h+=`<div class="result-section"><div class="result-section-title">🎯 후속 진행</div>`;r.followUps.forEach(a=>h+=`<div class="result-item action">${a.task}<div class="action-meta">${a.assignee?`<span class="action-badge assignee">👤 ${a.assignee}</span>`:''}${a.due?`<span class="action-badge due">📅 ${a.due}</span>`:''}${a.priority?`<span class="action-badge ${pc[a.priority]||''}">${pl[a.priority]||a.priority}</span>`:''}</div></div>`);h+='</div>';}
+  
+  // 이슈/리스크
   if(r.issues?.length){h+=`<div class="result-section"><div class="result-section-title">⚠️ 이슈/리스크</div>`;r.issues.forEach(i=>h+=`<div class="result-item issue">${i}</div>`);h+='</div>';}
-  if(r.nextMeeting)h+=`<div class="result-section"><div class="result-section-title">📅 다음 회의</div><div class="result-item note">${r.nextMeeting}</div></div>`;
+  
+  // 다음 회의 -> 기타
+  if(r.etc) h+=`<div class="result-section"><div class="result-section-title">💬 기타</div><div class="result-item note">${r.etc}</div></div>`;
+  
   h+='</div>';document.getElementById('resultBody').innerHTML=h;
 }
+
 function copyResult(){
   if(!S.result){showToast('복사할 내용이 없습니다');return;}
   const r=S.result,t=T.find(t=>t.id===r.template);
-  let x=`# ${document.getElementById('mTitle').value||'회의록'}\n날짜: ${r.date||''} | 유형: ${t?.label||''} | 참석자: ${r.attendees||''}\n`;
-  if(r.milestones?.length)x+=`마일스톤: ${r.milestones.join(', ')}\n`;x+='\n';
-  if(r.summary)x+=`## 요약\n${r.summary}\n\n`;
-  if(r.decisions?.length)x+=`## 결정사항\n${r.decisions.map(d=>'- '+d).join('\n')}\n\n`;
-  if(r.actions?.length)x+=`## 액션아이템\n${r.actions.map(a=>'- '+a.task+(a.assignee?' ('+a.assignee+')':'')+(a.due?' ~'+a.due:'')).join('\n')}\n\n`;
-  if(r.pending?.length)x+=`## 보류/미결\n${r.pending.map(p=>'- '+p).join('\n')}\n\n`;
-  if(r.issues?.length)x+=`## 이슈/리스크\n${r.issues.map(i=>'- '+i).join('\n')}\n\n`;
-  if(r.nextMeeting)x+=`## 다음 회의\n${r.nextMeeting}\n`;
+  
+  let x=`# ${document.getElementById('mTitle').value||'회의록'}\n`;
+  x+=`날짜: ${r.date||''} | 장소: ${r.location||'-'} | 유형: ${t?.label||''}\n참석자: ${r.attendees||''}\n`;
+  if(r.milestones?.length) x+=`마일스톤: ${r.milestones.join(', ')}\n`; x+='\n';
+  
+  if(r.keyPoints) x+=`## 핵심 요약\n${r.keyPoints}\n\n`;
+  if(r.fullSummary) x+=`## 전체 내용 요약\n${r.fullSummary}\n\n`;
+  if(r.decisions?.length) x+=`## 결정사항\n${r.decisions.map(d=>'- '+d).join('\n')}\n\n`;
+  if(r.followUps?.length) x+=`## 후속 진행\n${r.followUps.map(a=>'- '+a.task+(a.assignee?' ('+a.assignee+')':'')+(a.due?' ~'+a.due:'')).join('\n')}\n\n`;
+  if(r.issues?.length) x+=`## 이슈/리스크\n${r.issues.map(i=>'- '+i).join('\n')}\n\n`;
+  if(r.etc) x+=`## 기타\n${r.etc}\n`;
+  
   navigator.clipboard.writeText(x).then(()=>showToast('📋 클립보드에 복사되었습니다'));
 }
 let tt;function showToast(m){clearTimeout(tt);let t=document.querySelector('.toast');if(t)t.remove();t=document.createElement('div');t.className='toast';t.textContent=m;document.body.appendChild(t);tt=setTimeout(()=>t.remove(),2500);}

@@ -67,7 +67,7 @@ body{font-family:'Noto Sans KR','DM Sans',sans-serif;background:var(--bg);color:
 .config-section-title{font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:0.6px;}
 .config-desc{font-size:10px;color:var(--text3);line-height:1.5;}
 .config-add-row{display:flex;gap:6px;}
-.config-input{flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:6px 8px;color:var(--text);font-size:11px;font-family:inherit;outline:none;min-width:0;}
+.config-input{flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:6px 8px;color:var(--text);font-size:11px;font-family:inherit;outline:none;min-width:0;transition:all 0.2s;}
 .config-input:focus{border-color:var(--accent);}
 .config-input::placeholder{color:var(--text3);}
 .btn-config{padding:6px 12px;background:var(--accent-light);border:1px solid rgba(224,107,32,0.25);border-radius:6px;color:var(--accent);font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap;font-family:inherit;transition:all 0.15s;}
@@ -122,11 +122,6 @@ body{font-family:'Noto Sans KR','DM Sans',sans-serif;background:var(--bg);color:
 .image-drop-bar .drop-icon{font-size:18px;flex-shrink:0;}
 .image-drop-bar .drop-text{font-size:11px;color:var(--text2);flex:1;}
 .image-drop-bar .drop-text span{color:var(--accent);font-weight:600;cursor:pointer;}
-.image-thumb{width:36px;height:36px;border-radius:6px;object-fit:cover;border:1px solid var(--border);}
-.image-clear{border:none;background:transparent;color:var(--text3);cursor:pointer;font-size:13px;padding:4px;}
-.image-clear:hover{color:var(--warn);}
-.ocr-spinner{width:14px;height:14px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin 0.7s linear infinite;flex-shrink:0;}
-@keyframes spin{to{transform:rotate(360deg);}}
 
 .editor-footer{padding:10px 20px;border-top:1px solid var(--border);display:flex;gap:10px;align-items:center;flex-shrink:0;background:var(--surface);}
 .char-count{font-size:11px;color:var(--text3);font-family:'JetBrains Mono',monospace;}
@@ -148,8 +143,6 @@ body{font-family:'Noto Sans KR','DM Sans',sans-serif;background:var(--bg);color:
 .empty-text{font-size:13px;text-align:center;line-height:1.7;}
 .loading-state{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;}
 .spinner{width:28px;height:28px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin 0.8s linear infinite;}
-.loading-text{font-size:13px;color:var(--text2);}
-.loading-sub{font-size:11px;color:var(--text3);}
 
 .result-content{display:flex;flex-direction:column;gap:14px;animation:fadeUp 0.3s ease;}
 @keyframes fadeUp{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
@@ -171,7 +164,6 @@ body{font-family:'Noto Sans KR','DM Sans',sans-serif;background:var(--bg);color:
 .action-badge{padding:1px 7px;border-radius:4px;font-size:10px;font-weight:600;}
 .action-badge.assignee{background:rgba(107,66,28,0.08);color:#8B5E3C;}
 
-/* 마크다운 스타일링 (summary-box 내부) */
 .summary-box{padding:12px 14px;background:var(--surface);border-radius:var(--radius-sm);border:1px solid var(--border);font-size:13px;color:var(--text);line-height:1.7;}
 .summary-box h1, .summary-box h2, .summary-box h3 {font-size:14px; font-weight:700; margin-bottom:6px; color:var(--text);}
 .summary-box p {margin-bottom:8px;}
@@ -180,12 +172,14 @@ body{font-family:'Noto Sans KR','DM Sans',sans-serif;background:var(--bg);color:
 .summary-box strong {color:var(--accent); font-weight:700;}
 
 .result-footer{padding:12px 20px;border-top:1px solid var(--border);display:flex;gap:8px;flex-shrink:0;}
-.btn-copy,.btn-save{flex:1;padding:8px 14px;border-radius:var(--radius-sm);font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;transition:all 0.15s;font-family:inherit;}
+.btn-copy,.btn-save,.btn-wiki{flex:1;padding:8px 14px;border-radius:var(--radius-sm);font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;transition:all 0.15s;font-family:inherit;}
 .btn-copy{background:transparent;border:1px solid var(--border2);color:var(--text2);}
 .btn-copy:hover{background:var(--surface2);color:var(--text);}
+.btn-wiki{background:rgba(107,66,180,0.1);border:1px solid rgba(107,66,180,0.3);color:#6B42B4;}
+.btn-wiki:hover{background:rgba(107,66,180,0.2);}
 .btn-save{background:rgba(42,158,111,0.1);border:1px solid rgba(42,158,111,0.25);color:var(--accent3);}
 .btn-save:hover{background:rgba(42,158,111,0.18);}
-.btn-save:disabled{opacity:0.4;cursor:not-allowed;}
+.btn-save:disabled, .btn-wiki:disabled{opacity:0.4;cursor:not-allowed;}
 .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--text);border-radius:20px;padding:8px 18px;font-size:12px;font-weight:500;color:#fff;z-index:200;animation:fadeUp 0.2s ease;white-space:nowrap;}
 
 .tag-kickoff{background:rgba(224,107,32,0.12);color:var(--accent);}
@@ -212,6 +206,7 @@ body{font-family:'Noto Sans KR','DM Sans',sans-serif;background:var(--bg);color:
       <div class="sidebar-tab active" data-tab="meetings" onclick="switchTab('meetings')">회의록</div>
       <div class="sidebar-tab" data-tab="dictionary" onclick="switchTab('dictionary')">명사집</div>
       <div class="sidebar-tab" data-tab="milestones" onclick="switchTab('milestones')">마일스톤</div>
+      <div class="sidebar-tab" data-tab="settings" onclick="switchTab('settings')">설정</div>
     </div>
     <div class="sidebar-panel active" id="panelMeetings">
       <div class="meeting-list" id="meetingList"><div class="empty-list" id="emptyList">저장된 회의록이 없습니다</div></div>
@@ -245,6 +240,27 @@ body{font-family:'Noto Sans KR','DM Sans',sans-serif;background:var(--bg);color:
         <div class="config-list" id="msList"></div>
       </div>
     </div>
+    <div class="sidebar-panel" id="panelSettings">
+      <div class="config-panel">
+        <div class="config-section-title">컨플루언스 연동 설정</div>
+        <div class="config-desc">본인의 위키 접속 정보와 발급받은 개인용 액세스 토큰(PAT)을 입력하세요.<br><br>💡 이 정보는 다른 사람과 공유되지 않으며, 사용자 <b>본인의 브라우저에만 안전하게 보관</b>됩니다.</div>
+        
+        <div style="margin-top: 10px;">
+          <div style="font-size: 10px; font-weight: 600; color: var(--text3); margin-bottom: 4px;">1. 위키 기본 주소</div>
+          <input class="config-input" id="cfgBaseUrl" placeholder="예: https://wiki.smilegate.com" style="width: 100%; margin-bottom: 12px;">
+          
+          <div style="font-size: 10px; font-weight: 600; color: var(--text3); margin-bottom: 4px;">2. 개인용 액세스 토큰 (PAT)</div>
+          <input class="config-input" type="password" id="cfgToken" placeholder="발급받은 토큰 입력" style="width: 100%; margin-bottom: 12px;">
+          
+          <div style="font-size: 10px; font-weight: 600; color: var(--text3); margin-bottom: 4px;">3. 업로드할 스페이스 키 (Space Key)</div>
+          <input class="config-input" id="cfgSpace" placeholder="예: DEV, DESIGN 등" style="width: 100%; margin-bottom: 12px;">
+          
+          <div style="font-size: 10px; font-weight: 600; color: var(--text3); margin-bottom: 4px;">4. 부모 페이지 ID (선택 사항)</div>
+          <input class="config-input" id="cfgParentId" placeholder="특정 폴더 하위에 넣을 경우 숫자 ID 입력" style="width: 100%; margin-bottom: 12px;">
+        </div>
+        <button class="btn-config" style="width: 100%; margin-top: 8px;" onclick="saveWikiConfig()">설정 저장</button>
+      </div>
+    </div>
   </div>
 
   <div class="main">
@@ -263,7 +279,14 @@ body{font-family:'Noto Sans KR','DM Sans',sans-serif;background:var(--bg);color:
         <div class="meta-row">
           <input class="meta-input wide" id="mTitle" placeholder="회의 제목" style="flex-basis: 100%; margin-bottom: 4px;" oninput="updateTitle()">
           
-          <input class="meta-input" id="mAttendees" placeholder="참석자 (쉼표로 구분)" style="flex-basis: 100%;">
+          <div style="display:flex; gap:8px; flex-basis: 100%; margin-top: 4px;">
+            <input class="meta-input" id="mAttPlanning" placeholder="기획실 참석자" style="flex: 1;">
+            <input class="meta-input" id="mAttDev" placeholder="개발실 참석자" style="flex: 1;">
+          </div>
+          <div style="display:flex; gap:8px; flex-basis: 100%; margin-top: 4px;">
+            <input class="meta-input" id="mAttMgmt" placeholder="개발관리실 참석자" style="flex: 1;">
+            <input class="meta-input" id="mAttAi" placeholder="AI센터 참석자" style="flex: 1;">
+          </div>
           
           <div style="display:flex; gap:8px; flex-basis: 100%; margin-top: 4px;">
             <input class="meta-input" id="mLink1" placeholder="참고 링크 1 (URL 등)" style="flex: 1;">
@@ -314,7 +337,8 @@ body{font-family:'Noto Sans KR','DM Sans',sans-serif;background:var(--bg);color:
         </div>
         <div class="result-footer">
           <button class="btn-copy" onclick="copyResult()">📋 복사</button>
-          <button class="btn-save" id="saveBtn" onclick="saveMeeting()" disabled>💾 저장</button>
+          <button class="btn-wiki" id="wikiBtn" onclick="exportToConfluence()" disabled>🚀 위키 업로드</button>
+          <button class="btn-save" id="saveBtn" onclick="saveMeeting()" disabled>💾 로컬 저장</button>
         </div>
       </div>
     </div>
@@ -342,11 +366,18 @@ let S={
   meetings:JSON.parse(localStorage.getItem('sg_meetings')||'[]'),
   dict:JSON.parse(localStorage.getItem('sg_dict')||'[]'),
   ms:JSON.parse(localStorage.getItem('sg_ms')||'[]'),
+  cfg:JSON.parse(localStorage.getItem('sg_config')||'{"baseUrl":"","token":"","space":"","parentId":""}'),
   result:null,uploadedImg:null
 };
 
 function init(){
   document.getElementById('mDate').value=new Date().toISOString().split('T')[0];
+  
+  document.getElementById('cfgBaseUrl').value = S.cfg.baseUrl || '';
+  document.getElementById('cfgToken').value = S.cfg.token || '';
+  document.getElementById('cfgSpace').value = S.cfg.space || '';
+  document.getElementById('cfgParentId').value = S.cfg.parentId || '';
+
   const c=document.getElementById('templateChips');
   T.forEach(t=>{const el=document.createElement('button');el.className='chip'+(t.id===S.tpl?' active':'');el.textContent=t.icon+' '+t.label;el.onclick=()=>selTpl(t.id);el.dataset.id=t.id;c.appendChild(el);});
   renderList();renderDict();renderMs();refreshMsSel();
@@ -354,7 +385,19 @@ function init(){
 function selTpl(id){S.tpl=id;document.querySelectorAll('.chip').forEach(c=>c.classList.toggle('active',c.dataset.id===id));}
 function switchTab(t){document.querySelectorAll('.sidebar-tab').forEach(e=>e.classList.toggle('active',e.dataset.tab===t));document.querySelectorAll('.sidebar-panel').forEach(p=>p.classList.remove('active'));document.getElementById('panel'+t.charAt(0).toUpperCase()+t.slice(1)).classList.add('active');}
 
-/* ── DICTIONARY ── */
+/* ── CONFIG ── */
+function saveWikiConfig() {
+  S.cfg = {
+    baseUrl: document.getElementById('cfgBaseUrl').value.trim(),
+    token: document.getElementById('cfgToken').value.trim(),
+    space: document.getElementById('cfgSpace').value.trim(),
+    parentId: document.getElementById('cfgParentId').value.trim()
+  };
+  localStorage.setItem('sg_config', JSON.stringify(S.cfg));
+  showToast('✅ 위키 연동 설정이 로컬에 저장되었습니다');
+}
+
+/* ── DICTIONARY / MILESTONES ── */
 function saveDict(){localStorage.setItem('sg_dict',JSON.stringify(S.dict));}
 function renderDict(){
   const l=document.getElementById('dictList');l.innerHTML='';
@@ -369,7 +412,6 @@ function addDict(){
 }
 function delDict(i){S.dict.splice(i,1);saveDict();renderDict();}
 
-/* ── MILESTONES ── */
 function saveMs(){localStorage.setItem('sg_ms',JSON.stringify(S.ms));}
 function renderMs(){
   const l=document.getElementById('msList');l.innerHTML='';
@@ -401,7 +443,10 @@ function newMeeting(){
   document.getElementById('mTitle').value='';
   document.getElementById('mDate').value=new Date().toISOString().split('T')[0];
   document.getElementById('mLocation').value='';
-  document.getElementById('mAttendees').value='';
+  document.getElementById('mAttPlanning').value='';
+  document.getElementById('mAttDev').value='';
+  document.getElementById('mAttMgmt').value='';
+  document.getElementById('mAttAi').value='';
   document.getElementById('mLink1').value='';
   document.getElementById('mLink2').value='';
   document.getElementById('mLink3').value='';
@@ -416,7 +461,14 @@ function loadMeeting(id){
   document.getElementById('mTitle').value=m.title||'';
   document.getElementById('mDate').value=m.date||'';
   document.getElementById('mLocation').value=m.location||'';
-  document.getElementById('mAttendees').value=m.attendees||'';
+  
+  // attendees 객체 복원
+  const atts = m.attendees || {};
+  document.getElementById('mAttPlanning').value=atts.planning||'';
+  document.getElementById('mAttDev').value=atts.dev||'';
+  document.getElementById('mAttMgmt').value=atts.mgmt||'';
+  document.getElementById('mAttAi').value=atts.ai||'';
+  
   document.getElementById('mLink1').value=m.links && m.links[0] ? m.links[0] : '';
   document.getElementById('mLink2').value=m.links && m.links[1] ? m.links[1] : '';
   document.getElementById('mLink3').value=m.links && m.links[2] ? m.links[2] : '';
@@ -431,15 +483,23 @@ function saveMeeting(){
   const title=document.getElementById('mTitle').value.trim()||'제목 없음';
   const date=document.getElementById('mDate').value;
   const loc=document.getElementById('mLocation').value;
-  const att=document.getElementById('mAttendees').value.trim();
+  
+  // 부서별 참석자 모으기
+  const attendees = {
+    planning: document.getElementById('mAttPlanning').value.trim(),
+    dev: document.getElementById('mAttDev').value.trim(),
+    mgmt: document.getElementById('mAttMgmt').value.trim(),
+    ai: document.getElementById('mAttAi').value.trim()
+  };
+  
   const l1=document.getElementById('mLink1').value.trim();
   const l2=document.getElementById('mLink2').value.trim();
   const l3=document.getElementById('mLink3').value.trim();
   const links = [l1, l2, l3].filter(Boolean);
   const ms=document.getElementById('mMilestone').value,raw=document.getElementById('rawInput').value.trim();
   
-  if(S.curId){const i=S.meetings.findIndex(m=>m.id===S.curId);if(i!==-1)S.meetings[i]={...S.meetings[i],title,date,location:loc,attendees:att,links,milestone:ms,raw,template:S.tpl,result:S.result};}
-  else{const id=Date.now().toString();S.curId=id;S.meetings.push({id,title,date,location:loc,attendees:att,links,milestone:ms,raw,template:S.tpl,result:S.result});}
+  if(S.curId){const i=S.meetings.findIndex(m=>m.id===S.curId);if(i!==-1)S.meetings[i]={...S.meetings[i],title,date,location:loc,attendees,links,milestone:ms,raw,template:S.tpl,result:S.result};}
+  else{const id=Date.now().toString();S.curId=id;S.meetings.push({id,title,date,location:loc,attendees,links,milestone:ms,raw,template:S.tpl,result:S.result});}
   saveMeetings();renderList();document.getElementById('topbarTitle').textContent=title;showToast('💾 저장되었습니다');
 }
 function deleteMeeting(){
@@ -449,6 +509,34 @@ function deleteMeeting(){
 function updateTitle(){document.getElementById('topbarTitle').textContent=document.getElementById('mTitle').value.trim()||'새 회의록';}
 function updateCount(){document.getElementById('charCount').textContent=document.getElementById('rawInput').value.length.toLocaleString()+'자';}
 
+// 참석자를 예쁘게 포맷팅해주는 헬퍼 함수
+function formatAttendees(atts) {
+  if (!atts) return '-';
+  if (typeof atts === 'string') return atts; // 하위 호환성 (과거 데이터)
+  
+  let result = [];
+  if (atts.planning) result.push(`기획실: ${atts.planning}`);
+  if (atts.dev) result.push(`개발실: ${atts.dev}`);
+  if (atts.mgmt) result.push(`개발관리실: ${atts.mgmt}`);
+  if (atts.ai) result.push(`AI센터: ${atts.ai}`);
+  
+  return result.length > 0 ? result.join(' / ') : '-';
+}
+
+// 참석자를 HTML 목록(위키용)으로 포맷팅해주는 헬퍼 함수
+function formatAttendeesHTML(atts) {
+  if (!atts) return '-';
+  if (typeof atts === 'string') return atts; 
+  
+  let result = [];
+  if (atts.planning) result.push(`<strong>기획실:</strong> ${atts.planning}`);
+  if (atts.dev) result.push(`<strong>개발실:</strong> ${atts.dev}`);
+  if (atts.mgmt) result.push(`<strong>개발관리실:</strong> ${atts.mgmt}`);
+  if (atts.ai) result.push(`<strong>AI센터:</strong> ${atts.ai}`);
+  
+  return result.length > 0 ? result.join('<br>') : '-';
+}
+
 /* ── GENERATE (LIVE API) ── */
 async function generate(){
   const raw=document.getElementById('rawInput').value.trim();
@@ -456,7 +544,14 @@ async function generate(){
   
   const date=document.getElementById('mDate').value;
   const loc=document.getElementById('mLocation').value;
-  const att=document.getElementById('mAttendees').value.trim();
+  
+  const attendees = {
+    planning: document.getElementById('mAttPlanning').value.trim(),
+    dev: document.getElementById('mAttDev').value.trim(),
+    mgmt: document.getElementById('mAttMgmt').value.trim(),
+    ai: document.getElementById('mAttAi').value.trim()
+  };
+
   const l1=document.getElementById('mLink1').value.trim();
   const l2=document.getElementById('mLink2').value.trim();
   const l3=document.getElementById('mLink3').value.trim();
@@ -466,6 +561,7 @@ async function generate(){
   document.getElementById('genBtn').disabled=true;
   document.getElementById('genBtn').textContent='생성 중...';
   document.getElementById('saveBtn').disabled=true;
+  document.getElementById('wikiBtn').disabled=true;
   document.getElementById('statusDot').classList.remove('active');
   
   document.getElementById('resultBody').innerHTML=`
@@ -491,13 +587,14 @@ async function generate(){
     const aiData = await response.json();
     if (!response.ok) throw new Error(aiData.error || 'API 호출에 실패했습니다.');
 
-    S.result = { ...aiData, date, location: loc, attendees: att, links, template: S.tpl, raw };
+    S.result = { ...aiData, date, location: loc, attendees, links, template: S.tpl, raw };
     if(ms) S.result.milestones = [ms];
 
     renderResult(S.result);
     
     document.getElementById('statusDot').classList.add('active');
     document.getElementById('saveBtn').disabled=false;
+    document.getElementById('wikiBtn').disabled=false;
     showToast('✦ 회의록이 생성되었습니다');
   } catch (err) {
     console.error(err);
@@ -511,7 +608,9 @@ async function generate(){
 
 /* ── RENDER RESULT ── */
 function showEmpty(){
-  document.getElementById('statusDot').classList.remove('active');document.getElementById('saveBtn').disabled=true;
+  document.getElementById('statusDot').classList.remove('active');
+  document.getElementById('saveBtn').disabled=true;
+  document.getElementById('wikiBtn').disabled=true;
   document.getElementById('resultBody').innerHTML=`<div class="empty-state"><div class="empty-icon">✦</div><div class="empty-text">회의 내용을 입력하고 생성하세요<br><span style="font-size:11px;opacity:0.5;">LIVE API와 연결되었습니다</span></div></div>`;
 }
 
@@ -534,7 +633,7 @@ function renderResult(r){
         <div class="result-meta-item"><div class="result-meta-label">날짜</div><div class="result-meta-value">${r.date||'-'}</div></div>
         <div class="result-meta-item"><div class="result-meta-label">장소</div><div class="result-meta-value">${r.location||'-'}</div></div>
         <div class="result-meta-item"><div class="result-meta-label">유형</div><div class="result-meta-value">${tpl?.label||'-'}</div></div>
-        <div class="result-meta-item" style="flex-basis: 100%; margin-top:4px;"><div class="result-meta-label">참석자</div><div class="result-meta-value">${r.attendees||'-'}</div></div>
+        <div class="result-meta-item" style="flex-basis: 100%; margin-top:4px;"><div class="result-meta-label">참석자</div><div class="result-meta-value">${formatAttendees(r.attendees)}</div></div>
         ${r.links && r.links.length > 0 ? `<div class="result-meta-item" style="flex-basis: 100%; margin-top:4px;"><div class="result-meta-label">참고 링크</div><div class="result-meta-value">${r.links.map(l => `<a href="${l}" target="_blank" style="color:var(--accent); margin-right:12px; word-break:break-all;">${l}</a>`).join('')}</div></div>` : ''}
       </div>`;
       
@@ -605,7 +704,9 @@ async function copyResult(){
   const etcStr = cleanMarkdownList(r.etc);
 
   let plainText=`# ${document.getElementById('mTitle').value||'회의록'}\n`;
-  plainText+=`날짜: ${r.date||''} | 장소: ${r.location||'-'} | 유형: ${t?.label||''}\n참석자: ${r.attendees||''}\n`;
+  plainText+=`날짜: ${r.date||''} | 장소: ${r.location||'-'} | 유형: ${t?.label||''}\n`;
+  plainText+=`참석자: ${formatAttendees(r.attendees)}\n`;
+  
   if(r.links && r.links.length > 0) plainText+=`참고 링크:\n${r.links.map(l => `- ${l}`).join('\n')}\n`;
   if(r.milestones?.length) plainText+=`마일스톤: ${r.milestones.join(', ')}\n`; plainText+='\n';
   
@@ -645,7 +746,7 @@ async function copyResult(){
       </tr>
       <tr>
         <td style="padding: 8px; background-color: #f4f5f7;"><strong>참석자</strong></td>
-        <td style="padding: 8px;" colspan="3">${r.attendees||'-'}</td>
+        <td style="padding: 8px;" colspan="3">${formatAttendeesHTML(r.attendees)}</td>
       </tr>
       ${r.links && r.links.length > 0 ? `
       <tr>

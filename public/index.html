@@ -131,7 +131,7 @@ body{font-family:'Noto Sans KR','DM Sans',sans-serif;background:var(--bg);color:
 .editor-footer{padding:10px 20px;border-top:1px solid var(--border);display:flex;gap:10px;align-items:center;flex-shrink:0;background:var(--surface);}
 .char-count{font-size:11px;color:var(--text3);font-family:'JetBrains Mono',monospace;}
 .model-badge{font-size:10px;color:var(--accent3);background:rgba(42,158,111,0.1);padding:2px 8px;border-radius:4px;font-weight:600;font-family:'JetBrains Mono',monospace;}
-.demo-badge{font-size:10px;color:var(--accent);background:var(--accent-light);padding:2px 8px;border-radius:4px;font-weight:600;font-family:'JetBrains Mono',monospace;}
+.demo-badge{font-size:10px;color:var(--accent3);background:rgba(42,158,111,0.1);padding:2px 8px;border-radius:4px;font-weight:600;font-family:'JetBrains Mono',monospace;}
 .btn-generate{margin-left:auto;padding:9px 22px;background:var(--accent);border:none;border-radius:var(--radius-sm);color:#fff;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;transition:all 0.2s;font-family:inherit;}
 .btn-generate:hover:not(:disabled){background:var(--accent2);transform:translateY(-1px);}
 .btn-generate:disabled{opacity:0.4;cursor:not-allowed;}
@@ -281,14 +281,14 @@ body{font-family:'Noto Sans KR','DM Sans',sans-serif;background:var(--bg);color:
         <div class="editor-footer">
           <span class="char-count" id="charCount">0자</span>
           <span class="model-badge">GPT-4.1-mini</span>
-          <span class="demo-badge">DEMO</span>
+          <span class="demo-badge">LIVE API</span>
           <button class="btn-generate" id="genBtn" onclick="generate()">✦ 회의록 생성</button>
         </div>
       </div>
       <div class="result-panel">
         <div class="result-header"><div class="status-dot" id="statusDot"></div><div class="result-title">회의록 결과</div></div>
         <div class="result-body" id="resultBody">
-          <div class="empty-state"><div class="empty-icon">✦</div><div class="empty-text">회의 내용을 입력하고 생성하세요<br><span style="font-size:11px;opacity:0.5;">데모 모드로 동작합니다</span></div></div>
+          <div class="empty-state"><div class="empty-icon">✦</div><div class="empty-text">회의 내용을 입력하고 생성하세요<br><span style="font-size:11px;opacity:0.5;">LIVE API와 연결되었습니다</span></div></div>
         </div>
         <div class="result-footer">
           <button class="btn-copy" onclick="copyResult()">📋 복사</button>
@@ -308,13 +308,6 @@ const T=[
   {id:'general',label:'일반 회의',icon:'💬',tag:'tag-general',hint:'결정사항, 액션아이템, 담당자, 기한, 보류 사항 위주로 정리해주세요.'},
   {id:'qa',label:'QA 리뷰',icon:'🐛',tag:'tag-qa',hint:'버그 목록, 심각도, 재현 경로, 우선순위, 담당자, 해결 기한 위주로 정리해주세요.'},
 ];
-const DEMO={
-  kickoff:{summary:"v2.0 대규모 업데이트 킥오프 회의를 진행했습니다. 전투 시스템 리뉴얼과 신규 레이드 '용의 둥지'를 핵심 목표로 설정하고, 6주 개발 + 2주 QA 일정과 팀별 R&R을 확정했습니다.",milestones:["v2.0"],decisions:["v2.0 핵심 목표: 전투 시스템 리뉴얼 + 레이드 '용의 둥지' 추가","개발 기간 6주 (4/7~5/16), QA 기간 2주 확정","주 단위 체크인, 격주 마일스톤 리뷰"],actions:[{task:"전투 시스템 기술 설계서 작성",assignee:"서버팀 이선임",due:"4/11(금)",priority:"high"},{task:"레이드 '용의 둥지' 기획서 초안",assignee:"기획팀 정과장",due:"4/14(월)",priority:"high"},{task:"발키리 스킬 리밸런싱 시뮬레이션",assignee:"기획팀 김대리",due:"4/18(금)",priority:"mid"},{task:"아트 에셋 리스트업 및 일정 산정",assignee:"아트팀 박리드",due:"4/11(금)",priority:"mid"}],pending:["외부 사운드 스튜디오 계약 — 다음 주 미팅 후 확정","레이드 매칭 방식(크로스서버) — 서버 공수 확인 후 결정"],issues:["아트팀 인력 1명 공백(4월 중순까지) — 에셋 일정 리스크","크로스서버 매칭 시 서버 지연 가능성"],nextMeeting:"4/14(월) 오전 10시 — 1주차 체크인"},
-  plan:{summary:"v2.0 전투 밸런스 기획 리뷰를 진행했습니다. 발키리 궁극기 쿨타임 하향 및 드롭률 상향이 확정되었고, 워리어 리밸런싱은 시뮬레이션 결과 대기 후 재논의합니다.",milestones:["v2.0"],decisions:["발키리 궁극기 쿨타임 40초→35초, 데미지 계수 8% 상향","레이드 드롭률: 전설 장비 2%→3% 상향","던전 난이도 3단계→5단계 세분화 확정"],actions:[{task:"발키리 스킬 수치 최종 정리",assignee:"기획팀 김대리",due:"금요일",priority:"high"},{task:"5단계 난이도별 몬스터 스탯 설계",assignee:"기획팀 정과장",due:"다음 주 수요일",priority:"mid"},{task:"드롭률 변경 경제 시뮬레이션",assignee:"기획팀 최주임",due:"다음 주 금요일",priority:"mid"}],pending:["워리어 리밸런싱 — 시뮬 결과 대기","신규 보스 패턴 — 아트 컨셉 대기"],issues:["드롭률 상향 시 인플레이션 우려","난이도 세분화 → 매칭 UI 수정 필요"],nextMeeting:"다음 주 화요일 오후 2시"},
-  dev:{summary:"v2.0 개발 회의에서 전투 서버 아키텍처를 동기→비동기 이벤트 구조로 전환하기로 결정했습니다. 클라이언트 빌드는 매주 화요일 정기 배포, API는 /v2/ 네임스페이스 분리를 확정했습니다.",milestones:["v2.0"],decisions:["전투 서버: 비동기 이벤트 드리븐 구조 전환","클라이언트 빌드: 매주 화요일 정기 배포","API 버저닝: /v2/ 분리, 하위 호환 유지"],actions:[{task:"비동기 전투 서버 프로토타입",assignee:"서버팀 이선임",due:"4/18(금)",priority:"high"},{task:"전투 UI 리팩토링(이벤트 기반)",assignee:"클라이언트 박개발",due:"4/21(월)",priority:"high"},{task:"API v2 스펙 문서화",assignee:"서버팀 최시니어",due:"4/14(월)",priority:"mid"},{task:"CI/CD 화요일 배포 자동화",assignee:"DevOps 한매니저",due:"4/11(금)",priority:"mid"}],pending:["로그인 세션 이슈 — 다음 스프린트 이관 검토","Redis 클러스터 확장 — 부하 테스트 후 결정"],issues:["비동기 전환 시 PvP 동기화 호환성 리스크","iOS 14 인벤토리 버그 핫픽스 필요"],nextMeeting:"4/14(월) 오전 11시"},
-  general:{summary:"전체 팀 주간 싱크에서 v2.0 진행 현황을 점검했습니다. QA 인력 1명 추가 투입을 승인하고, 기획-아트 간 에셋 핸드오프를 매주 수요일로 정례화했습니다.",milestones:["v2.0"],decisions:["마일스톤 2 마감: 4/30 확정","QA 인력 1명 추가 투입 승인","기획-아트 에셋 핸드오프: 매주 수요일"],actions:[{task:"에셋 핸드오프 프로세스 문서화",assignee:"PM 한매니저",due:"금요일",priority:"high"},{task:"QA 추가 인력 온보딩",assignee:"QA리드 최팀장",due:"다음 주 월요일",priority:"mid"},{task:"백로그 정리",assignee:"각 팀 리드",due:"이번 주 내",priority:"mid"}],pending:["사운드 스튜디오 계약 — 다음 주 확정"],issues:["아트 에셋 지연 시 빌드 일정 영향"],nextMeeting:"다음 주 월요일 오전 10시"},
-  qa:{summary:"QA 리뷰에서 총 7건 버그 보고, 크리티컬 2건(인벤토리 버그·PvP 매칭 타임아웃)을 우선 수정 대상으로 결정했습니다. 인벤토리 버그는 핫픽스 대상으로 격상되었습니다.",milestones:["v2.0"],decisions:["인벤토리 버그(iOS 14 이하): 핫픽스 격상","PvP 매칭 타임아웃: 서버 설정값 30s→45s 조정","버그 심각도 분류 기준 문서 업데이트"],actions:[{task:"인벤토리 버그 핫픽스",assignee:"클라이언트 박개발",due:"내일",priority:"high"},{task:"PvP 매칭 타임아웃 설정 조정",assignee:"서버팀 이선임",due:"오늘",priority:"high"},{task:"발키리 이펙트 깨짐 수정",assignee:"클라이언트 최주임",due:"이번 주",priority:"mid"},{task:"Android 12 크래시 재현 환경 정리",assignee:"QA 김테스터",due:"이번 주",priority:"low"}],pending:["Android 12 특정 기기 크래시 — 모니터링 중","용의 둥지 로딩 지연 — 서버 로그 분석 대기"],issues:["핫픽스 배포 시 30분 점검 필요","크리티컬 2건 라이브 영향 — DAU 소폭 감소"],nextMeeting:"목요일 오후 2시"}
-};
 
 const OCR_DEMO=`[이미지에서 추출된 텍스트]
 
@@ -487,28 +480,65 @@ function deleteMeeting(){
 function updateTitle(){document.getElementById('topbarTitle').textContent=document.getElementById('mTitle').value.trim()||'새 회의록';}
 function updateCount(){document.getElementById('charCount').textContent=document.getElementById('rawInput').value.length.toLocaleString()+'자';}
 
-/* ── GENERATE ── */
+/* ── GENERATE (LIVE API) ── */
 async function generate(){
   const raw=document.getElementById('rawInput').value.trim();
   if(!raw){showToast('회의 내용을 입력해주세요');return;}
-  const date=document.getElementById('mDate').value,att=document.getElementById('mAttendees').value.trim(),ms=document.getElementById('mMilestone').value;
-  document.getElementById('genBtn').disabled=true;document.getElementById('genBtn').textContent='생성 중...';
-  document.getElementById('saveBtn').disabled=true;document.getElementById('statusDot').classList.remove('active');
-  document.getElementById('resultBody').innerHTML=`<div class="loading-state"><div class="spinner"></div><div class="loading-text">회의 내용 분석 중...</div><div class="loading-sub">명사집 ${S.dict.length}개 용어 · 마일스톤 ${S.ms.length}개 참조</div></div>`;
-  await new Promise(r=>setTimeout(r,1400+Math.random()*600));
-  const demo=JSON.parse(JSON.stringify(DEMO[S.tpl]||DEMO.general));
-  if(ms){demo.milestones=[ms];const m=S.ms.find(x=>x.version===ms);if(m)demo.summary=demo.summary.replace(/v2\.0/g,ms);}
-  S.result={...demo,date,attendees:att,template:S.tpl,raw};
-  renderResult(S.result);
-  document.getElementById('saveBtn').disabled=false;document.getElementById('statusDot').classList.add('active');
-  document.getElementById('genBtn').disabled=false;document.getElementById('genBtn').textContent='✦ 회의록 생성';
-  showToast('✦ 데모 회의록이 생성되었습니다');
+  
+  const date=document.getElementById('mDate').value;
+  const att=document.getElementById('mAttendees').value.trim();
+  const ms=document.getElementById('mMilestone').value;
+
+  document.getElementById('genBtn').disabled=true;
+  document.getElementById('genBtn').textContent='생성 중...';
+  document.getElementById('saveBtn').disabled=true;
+  document.getElementById('statusDot').classList.remove('active');
+  
+  document.getElementById('resultBody').innerHTML=`
+    <div class="loading-state">
+      <div class="spinner"></div>
+      <div class="loading-text">진짜 AI가 회의 내용 분석 중...</div>
+      <div class="loading-sub">명사집 ${S.dict.length}개 용어 · 마일스톤 ${S.ms.length}개 참조</div>
+    </div>`;
+
+  try {
+    const response = await fetch('/api/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        rawText: raw,
+        template: S.tpl,
+        dict: S.dict,
+        milestones: S.ms
+      })
+    });
+
+    if (!response.ok) throw new Error('API 호출에 실패했습니다.');
+    
+    const aiData = await response.json();
+
+    S.result = { ...aiData, date, attendees: att, template: S.tpl, raw };
+    if(ms) S.result.milestones = [ms];
+
+    renderResult(S.result);
+    
+    document.getElementById('statusDot').classList.add('active');
+    document.getElementById('saveBtn').disabled=false;
+    showToast('✦ 회의록이 생성되었습니다');
+  } catch (err) {
+    console.error(err);
+    showToast('❌ 생성 실패: ' + err.message);
+    showEmpty();
+  } finally {
+    document.getElementById('genBtn').disabled=false;
+    document.getElementById('genBtn').textContent='✦ 회의록 생성';
+  }
 }
 
 /* ── RENDER RESULT ── */
 function showEmpty(){
   document.getElementById('statusDot').classList.remove('active');document.getElementById('saveBtn').disabled=true;
-  document.getElementById('resultBody').innerHTML=`<div class="empty-state"><div class="empty-icon">✦</div><div class="empty-text">회의 내용을 입력하고 생성하세요<br><span style="font-size:11px;opacity:0.5;">데모 모드로 동작합니다</span></div></div>`;
+  document.getElementById('resultBody').innerHTML=`<div class="empty-state"><div class="empty-icon">✦</div><div class="empty-text">회의 내용을 입력하고 생성하세요<br><span style="font-size:11px;opacity:0.5;">LIVE API와 연결되었습니다</span></div></div>`;
 }
 function renderResult(r){
   const pl={high:'🔴 높음',mid:'🟡 중간',low:'🟢 낮음'},pc={high:'priority-high',mid:'priority-mid',low:'priority-low'};

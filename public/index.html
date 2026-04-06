@@ -173,9 +173,9 @@ body{font-family:'Noto Sans KR','DM Sans',sans-serif;background:var(--bg);color:
 /* 후속 진행 부서 블록 */
 .dept-group{margin-bottom:10px;}
 .dept-group-label{font-size:12px;font-weight:700;margin-bottom:6px;padding-left:2px;}
-.dept-group-items{display:flex;flex-direction:column;gap:4px;}
-.dept-card{font-size:13px;line-height:1.6;padding:9px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);}
-.dept-card .a-inline{font-size:10px;font-weight:600;margin-left:4px;opacity:0.8;}
+.dept-group-box{padding:12px 14px;background:var(--surface);border-radius:var(--radius-sm);border:1px solid var(--border);font-size:13px;line-height:1.7;}
+.dept-group-box ul{margin:0;padding-left:20px;}
+.dept-group-box li{margin-bottom:2px;}
 </style>
 </head>
 <body>
@@ -423,15 +423,13 @@ function renderResult(r){
       if(items&&items.length>0){
         h+=`<div class="dept-group">`;
         h+=`<div class="dept-group-label" style="color:${dept.color};">${dept.label}</div>`;
-        h+=`<div class="dept-group-items">`;
+        h+=`<div class="dept-group-box"><ul>`;
         items.forEach(a=>{
           const task=a.task||(typeof a==='string'?a:'');
           const assignee=a.assignee||'';
-          h+=`<div class="dept-card" style="border-left:3px solid ${dept.color};">${task}`;
-          if(assignee) h+=` <span class="a-inline" style="color:${dept.color};">(${assignee})</span>`;
-          h+=`</div>`;
+          h+=`<li>${task}${assignee?' <span style="font-size:10px;font-weight:600;color:'+dept.color+';">('+assignee+')</span>':''}</li>`;
         });
-        h+=`</div></div>`;
+        h+=`</ul></div></div>`;
       }
     });
     h+='</div>';

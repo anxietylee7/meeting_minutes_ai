@@ -406,7 +406,7 @@ function renderResult(r){
 
   if(kpStr)h+=`<div class="result-section"><div class="result-section-title">💡 핵심 요약</div><div class="summary-box">${marked.parse(kpStr)}</div></div>`;
   if(fsStr)h+=`<div class="result-section"><div class="result-section-title">📝 전체 내용 요약</div><div class="summary-box">${marked.parse(fsStr)}</div></div>`;
-  if(r.decisions?.length){h+=`<div class="result-section"><div class="result-section-title">✅ 결정사항</div>`;r.decisions.forEach(d=>h+=`<div class="result-item decision">${d}</div>`);h+='</div>';}
+  if(r.decisions?.length){h+=`<div class="result-section"><div class="result-section-title">✅ 결정사항</div><div class="summary-box"><ul>`;r.decisions.forEach(d=>h+=`<li>${d}</li>`);h+=`</ul></div></div>`;}
 
   // ── 후속 진행: 부서별 그룹 + 항목별 카드 ──
   if(r.followUps&&Object.keys(r.followUps).length>0){
@@ -439,14 +439,14 @@ function renderResult(r){
   const disc=r.followUps?.discussion||[];
   const pend=r.pending||[];
   if(disc.length>0||pend.length>0){
-    h+=`<div class="result-section"><div class="result-section-title">⏳ 논의 필요 / 미결</div>`;
-    disc.forEach(d=>{const txt=d.task||(typeof d==='string'?d:'');h+=`<div class="result-item pending">${txt}</div>`;});
-    pend.forEach(p=>h+=`<div class="result-item pending">${p}</div>`);
-    h+='</div>';
+    h+=`<div class="result-section"><div class="result-section-title">⏳ 논의 필요 / 미결</div><div class="summary-box"><ul>`;
+    disc.forEach(d=>{const txt=d.task||(typeof d==='string'?d:'');h+=`<li>${txt}</li>`;});
+    pend.forEach(p=>h+=`<li>${p}</li>`);
+    h+=`</ul></div></div>`;
   }
 
-  if(r.issues?.length){const issueTitle=S.tpl==='plan'?'⚠️ 이슈/리스크 및 고려사항':'⚠️ 이슈/리스크';h+=`<div class="result-section"><div class="result-section-title">${issueTitle}</div>`;r.issues.forEach(i=>h+=`<div class="result-item issue">${i}</div>`);h+='</div>';}
-  if(etcStr)h+=`<div class="result-section"><div class="result-section-title">💬 기타</div><div class="result-item note">${etcStr.replace(/\n/g,'<br>')}</div></div>`;
+  if(r.issues?.length){const issueTitle=S.tpl==='plan'?'⚠️ 이슈/리스크 및 고려사항':'⚠️ 이슈/리스크';h+=`<div class="result-section"><div class="result-section-title">${issueTitle}</div><div class="summary-box"><ul>`;r.issues.forEach(i=>h+=`<li>${i}</li>`);h+=`</ul></div></div>`;}
+  if(etcStr)h+=`<div class="result-section"><div class="result-section-title">💬 기타</div><div class="summary-box">${etcStr.replace(/\n/g,'<br>')}</div></div>`;
   h+='</div>';document.getElementById('resultBody').innerHTML=h;
 }
 

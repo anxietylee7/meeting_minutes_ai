@@ -181,6 +181,12 @@ body{font-family:'Noto Sans KR','DM Sans',sans-serif;background:var(--bg);color:
 .tag-dev{background:rgba(42,120,190,0.1);color:#2A78BE;}
 .tag-general{background:rgba(120,110,100,0.1);color:var(--text2);}
 .tag-qa{background:rgba(217,69,69,0.1);color:var(--warn);}
+
+.dept-block{margin-bottom:10px;}
+.dept-block-header{font-size:12px;font-weight:700;margin-bottom:6px;padding-left:2px;}
+.dept-block-list{display:flex;flex-direction:column;gap:4px;}
+.dept-block-item{font-size:13px;line-height:1.6;padding:9px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);}
+.dept-block-item .assignee-inline{font-size:10px;font-weight:600;margin-left:4px;opacity:0.8;}
 </style>
 </head>
 <body>
@@ -380,8 +386,34 @@ function renderResult(r){
   if(kpStr)h+=`<div class="result-section"><div class="result-section-title">💡 핵심 요약</div><div class="summary-box">${marked.parse(kpStr)}</div></div>`;
   if(fsStr)h+=`<div class="result-section"><div class="result-section-title">📝 전체 내용 요약</div><div class="summary-box">${marked.parse(fsStr)}</div></div>`;
   if(r.decisions?.length){h+=`<div class="result-section"><div class="result-section-title">✅ 결정사항</div>`;r.decisions.forEach(d=>h+=`<div class="result-item decision">${d}</div>`);h+='</div>';}
-  if(r.followUps&&Object.keys(r.followUps).length>0){h+=`<div class="result-section"><div class="result-section-title">🎯 후속 진행</div>`;const depts=[{key:'planning',label:'기획실',color:'#6B42B4',bg:'rgba(107,66,180,0.1)'},{key:'development',label:'개발실',color:'#2A78BE',bg:'rgba(42,120,190,0.1)'},{key:'management',label:'개발관리실',color:'#C85A18',bg:'rgba(200,90,24,0.1)'},{key:'ai',label:'AI센터',color:'#2A9E6F',bg:'rgba(42,158,111,0.1)'}];depts.forEach(dept=>{const items=r.followUps[dept.key];if(items&&items.length>0){h+=`<div style="margin-top:6px;font-size:12px;font-weight:700;color:${dept.color};">${dept.label}</div>`;items.forEach(a=>{const taskText=a.task||(typeof a==='string'?a:'내용 없음');const assigneeText=a.assignee?a.assignee:'';h+=`<div class="result-item action" style="border-left-color:${dept.color};">${taskText}${assigneeText?`<div class="action-meta"><span class="action-badge assignee" style="background:${dept.bg};color:${dept.color};">👤 담당: ${assigneeText}</span></div>`:''}</div>`;});}});h+='</div>';}
-  if(r.pending?.length){h+=`<div class="result-section"><div class="result-section-title">⏳ 논의 필요 / 미결</div>`;r.pending.forEach(p=>h+=`<div class="result-item pending">${p}</div>`);h+='</div>';}
+  if(r.followUps&&Object.keys(r.followUps).length>0){
+    h+=`<div class="result-section"><div class="result-section-title">🎯 후속 진행</div>`;
+    if(r.followUps._deadline){h+=`<div style="padding:8px 12px;background:var(--accent-light);border-radius:var(--radius-sm);border:1px solid rgba(224,107,32,0.2);font-size:13px;font-weight:600;color:var(--accent);margin-bottom:8px;">📅 ${r.followUps._deadline}</div>`;}
+    const depts=[
+      {key:'planning',label:'기획실',color:'#6B42B4',bg:'rgba(107,66,180,0.06)',itemBg:'rgba(107,66,180,0.04)',dot:'#6B42B4'},
+      {key:'development',label:'개발실',color:'#2A78BE',bg:'rgba(42,120,190,0.06)',itemBg:'rgba(42,120,190,0.04)',dot:'#2A78BE'},
+      {key:'management',label:'개발관리실',color:'#C85A18',bg:'rgba(200,90,24,0.06)',itemBg:'rgba(200,90,24,0.04)',dot:'#C85A18'},
+      {key:'ai',label:'AI센터',color:'#2A9E6F',bg:'rgba(42,158,111,0.06)',itemBg:'rgba(42,158,111,0.04)',dot:'#2A9E6F'}
+    ];
+    depts.forEach(dept=>{
+      const items=r.followUps[dept.key];
+      if(items&&items.length>0){
+        h+=`<div class="dept-block">`;
+        h+=`<div class="dept-block-header" style="color:${dept.color};">${dept.label}</div>`;
+        h+=`<div class="dept-block-list">`;
+        items.forEach(a=>{
+          const task=a.task||(typeof a==='string'?a:'');
+          const assignee=a.assignee||'';
+          h+=`<div class="dept-block-item" style="border-left:3px solid ${dept.color};">${task}`;
+          if(assignee) h+=` <span class="assignee-inline" style="color:${dept.color};">(${assignee})</span>`;
+          h+=`</div>`;
+        });
+        h+=`</div></div>`;
+      }
+    });
+    h+='</div>';
+  }
+  if(r.pending?.length || (r.followUps?.discussion && r.followUps.discussion.length>0)){h+=`<div class="result-section"><div class="result-section-title">⏳ 논의 필요 / 미결</div>`;if(r.followUps?.discussion){r.followUps.discussion.forEach(d=>{const txt=d.task||(typeof d==='string'?d:'');h+=`<div class="result-item pending">${txt}</div>`;});}if(r.pending){r.pending.forEach(p=>h+=`<div class="result-item pending">${p}</div>`);}h+='</div>';}
   if(r.issues?.length){const issueTitle=S.tpl==='plan'?'⚠️ 이슈/리스크 및 고려사항':'⚠️ 이슈/리스크';h+=`<div class="result-section"><div class="result-section-title">${issueTitle}</div>`;r.issues.forEach(i=>h+=`<div class="result-item issue">${i}</div>`);h+='</div>';}
   if(etcStr)h+=`<div class="result-section"><div class="result-section-title">💬 기타</div><div class="result-item note">${etcStr.replace(/\n/g,'<br>')}</div></div>`;
   h+='</div>';document.getElementById('resultBody').innerHTML=h;
@@ -505,11 +537,14 @@ async function copyResult(){
   }
 
   // ── 논의 필요 / 미결 ──
-  if(r.pending?.length){
+  const discussionItems = r.followUps?.discussion || [];
+  const pendingItems = r.pending || [];
+  if(discussionItems.length > 0 || pendingItems.length > 0){
     html += `<h2>⏳ 논의 필요 / 미결</h2>`;
     html += `<table border="1" cellpadding="8" cellspacing="0" width="100%"><tbody>`;
     html += `<tr><td bgcolor="#fff7e6"><strong>⏳</strong></td><td bgcolor="#fff7e6"><strong>미결 사항</strong></td></tr>`;
-    r.pending.forEach(p=>html+=`<tr><td width="30">•</td><td>${p}</td></tr>`);
+    discussionItems.forEach(d=>{const txt=d.task||(typeof d==='string'?d:'');html+=`<tr><td width="30">•</td><td>${txt}</td></tr>`;});
+    pendingItems.forEach(p=>html+=`<tr><td width="30">•</td><td>${p}</td></tr>`);
     html += `</tbody></table>`;
   }
 
@@ -546,7 +581,10 @@ async function copyResult(){
     Object.keys(deptMap).forEach(key=>{if(r.followUps[key]&&r.followUps[key].length>0){plain+=`### ${deptMap[key].label}\n`;r.followUps[key].forEach(a=>{const task=a.task||(typeof a==='string'?a:'');const assignee=a.assignee?` (담당: ${a.assignee})`:'';plain+=`- ${task}${assignee}\n`;});}});
     plain+='\n';
   }
-  if(r.pending?.length)plain+=`## 논의 필요 / 미결\n${r.pending.map(p=>'- '+p).join('\n')}\n\n`;
+  const ptDiscussion=(r.followUps?.discussion||[]).map(d=>d.task||(typeof d==='string'?d:''));
+  const ptPending=r.pending||[];
+  const allPending=[...ptDiscussion,...ptPending];
+  if(allPending.length)plain+=`## 논의 필요 / 미결\n${allPending.map(p=>'- '+p).join('\n')}\n\n`;
   if(r.issues?.length)plain+=`## ${S.tpl==='plan'?'이슈/리스크 및 고려사항':'이슈/리스크'}\n${r.issues.map(i=>'- '+i).join('\n')}\n\n`;
   if(etcStr)plain+=`## 기타\n${etcStr}\n`;
 

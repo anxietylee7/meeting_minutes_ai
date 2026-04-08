@@ -365,7 +365,7 @@ async function doAuth(){
 
   try {
     // 서버에서 기존 회의록 불러오기
-    const res = await fetch('/api/meetings', { headers: { 'x-access-code': code } });
+    const res = await fetch('/api/meetings?code=' + encodeURIComponent(code));
     const data = await res.json();
 
     if(res.ok && data.meetings) {
@@ -382,8 +382,8 @@ async function doAuth(){
         setAuthStatus(`로컬 회의록 ${newLocal.length}개 업로드 중...`, '');
         await fetch('/api/meetings', {
           method: 'PUT',
-          headers: { 'Content-Type': 'application/json', 'x-access-code': code },
-          body: JSON.stringify({ meetings: newLocal })
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ meetings: newLocal, accessCode: code })
         });
         // 합치기
         S.meetings = [...data.meetings, ...newLocal];
@@ -467,11 +467,11 @@ function saveMeetings(){saveMeetingsLocal();}
 
 async function syncToCloud(meeting){
   if(!ACCESS_CODE)return;
-  try{await fetch('/api/meetings',{method:'POST',headers:{'Content-Type':'application/json','x-access-code':ACCESS_CODE},body:JSON.stringify({meeting})});}catch(e){console.error('Cloud sync failed:',e);}
+  try{await fetch('/api/meetings',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({meeting,accessCode:ACCESS_CODE})});}catch(e){console.error('Cloud sync failed:',e);}
 }
 async function deleteFromCloud(meetingId){
   if(!ACCESS_CODE)return;
-  try{await fetch('/api/meetings',{method:'DELETE',headers:{'Content-Type':'application/json','x-access-code':ACCESS_CODE},body:JSON.stringify({meetingId})});}catch(e){console.error('Cloud delete failed:',e);}
+  try{await fetch('/api/meetings',{method:'DELETE',headers:{'Content-Type':'application/json'},body:JSON.stringify({meetingId,accessCode:ACCESS_CODE})});}catch(e){console.error('Cloud delete failed:',e);}
 }
 function renderList(){const l=document.getElementById('meetingList'),e=document.getElementById('emptyList'),ms=[...S.meetings].reverse();if(!ms.length){e.style.display='block';l.querySelectorAll('.meeting-item').forEach(x=>x.remove());return;}e.style.display='none';l.querySelectorAll('.meeting-item').forEach(x=>x.remove());ms.forEach(m=>{const t=T.find(t=>t.id===m.template)||T[0];const el=document.createElement('div');el.className='meeting-item'+(m.id===S.curId?' active':'');el.innerHTML=`<div class="meeting-item-title">${m.title||'제목 없음'}</div><div class="meeting-item-meta"><span>${m.date||''}</span><span class="meeting-tag ${t.tag}">${t.icon} ${t.label}</span></div>`;el.onclick=()=>loadMeeting(m.id);l.appendChild(el);});}
 

@@ -207,9 +207,19 @@ body{font-family:'Noto Sans KR','DM Sans',sans-serif;background:var(--bg);color:
         <div class="logo-sub">MEETING MINUTES</div>
       </div>
     </div>
-    <div class="auth-title">보안코드 입력</div>
-    <div class="auth-desc">동일한 보안코드를 입력하면<br>다른 기기에서도 회의록을 공유할 수 있습니다</div>
-    <input class="auth-input" id="authInput" type="password" placeholder="보안코드 입력" maxlength="20" onkeydown="if(event.key==='Enter')doAuth()">
+    <div class="auth-title">워크스페이스 입장</div>
+    <div class="auth-desc">
+      보안코드는 나만의 회의록 저장 공간을 만드는 비밀번호예요.<br>
+      같은 코드를 입력하면 <b>PC, 노트북, 모바일</b> 어디서든 동일한 회의록을 볼 수 있습니다.
+    </div>
+    <div style="background:var(--surface2);border-radius:8px;padding:10px 14px;margin-bottom:16px;text-align:left;">
+      <div style="font-size:11px;color:var(--text2);line-height:1.7;">
+        💡 <b>처음 사용하시나요?</b> 원하는 코드를 자유롭게 입력하세요. 자동으로 새 공간이 만들어집니다.<br>
+        🔄 <b>기존 사용자라면?</b> 이전에 사용한 코드를 그대로 입력하면 저장된 회의록을 불러옵니다.<br>
+        👥 <b>팀원과 공유하려면?</b> 동일한 코드를 공유하면 같은 회의록을 함께 열람할 수 있습니다.
+      </div>
+    </div>
+    <input class="auth-input" id="authInput" type="password" placeholder="보안코드 입력 (4자 이상)" maxlength="20" onkeydown="if(event.key==='Enter')doAuth()">
     <button class="auth-btn" id="authBtn" onclick="doAuth()">입장</button>
     <div class="auth-status" id="authStatus"></div>
   </div>

@@ -176,10 +176,46 @@ body{font-family:'Noto Sans KR','DM Sans',sans-serif;background:var(--bg);color:
 .dept-group-box{padding:12px 14px;background:var(--surface);border-radius:var(--radius-sm);border:1px solid var(--border);font-size:13px;line-height:1.7;}
 .dept-group-box ul{margin:0;padding-left:20px;}
 .dept-group-box li{margin-bottom:2px;}
+
+/* 보안코드 입력 화면 */
+.auth-screen{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:999;}
+.auth-card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:40px 36px;width:380px;text-align:center;}
+.auth-logo{display:flex;align-items:center;gap:10px;justify-content:center;margin-bottom:24px;}
+.auth-title{font-size:18px;font-weight:700;margin-bottom:6px;}
+.auth-desc{font-size:12px;color:var(--text3);margin-bottom:24px;line-height:1.6;}
+.auth-input{width:100%;padding:12px 16px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);font-size:15px;font-family:'JetBrains Mono',monospace;text-align:center;letter-spacing:3px;outline:none;color:var(--text);transition:border-color 0.15s;}
+.auth-input:focus{border-color:var(--accent);}
+.auth-input::placeholder{letter-spacing:0;font-size:13px;font-family:'Noto Sans KR',sans-serif;}
+.auth-btn{width:100%;padding:12px;background:var(--accent);border:none;border-radius:var(--radius-sm);color:#fff;font-size:14px;font-weight:600;cursor:pointer;margin-top:12px;font-family:inherit;transition:all 0.2s;}
+.auth-btn:hover{background:var(--accent2);}
+.auth-btn:disabled{opacity:0.4;cursor:not-allowed;}
+.auth-status{font-size:11px;color:var(--text3);margin-top:12px;min-height:16px;}
+.auth-status.error{color:var(--warn);}
+.auth-status.success{color:var(--accent3);}
+.auth-migrate{font-size:11px;color:var(--accent);margin-top:8px;}
 </style>
 </head>
 <body>
-<div class="app">
+
+<!-- 보안코드 입력 화면 -->
+<div class="auth-screen" id="authScreen">
+  <div class="auth-card">
+    <div class="auth-logo">
+      <div class="logo-icon">S</div>
+      <div style="text-align:left;">
+        <div class="logo-text">SMILEGATE <span>MEETING AI</span></div>
+        <div class="logo-sub">MEETING MINUTES</div>
+      </div>
+    </div>
+    <div class="auth-title">보안코드 입력</div>
+    <div class="auth-desc">동일한 보안코드를 입력하면<br>다른 기기에서도 회의록을 공유할 수 있습니다</div>
+    <input class="auth-input" id="authInput" type="password" placeholder="보안코드 입력" maxlength="20" onkeydown="if(event.key==='Enter')doAuth()">
+    <button class="auth-btn" id="authBtn" onclick="doAuth()">입장</button>
+    <div class="auth-status" id="authStatus"></div>
+  </div>
+</div>
+
+<div class="app" id="mainApp" style="display:none;">
   <div class="sidebar">
     <div class="sidebar-header">
       <div class="logo">
@@ -304,7 +340,7 @@ body{font-family:'Noto Sans KR','DM Sans',sans-serif;background:var(--bg);color:
         </div>
         <div class="result-footer">
           <button class="btn-copy" onclick="copyResult()">📋 Confluence 복사</button>
-          <button class="btn-save" id="saveBtn" onclick="saveMeeting()" disabled>💾 로컬 저장</button>
+          <button class="btn-save" id="saveBtn" onclick="saveMeeting()" disabled>💾 저장</button>
         </div>
       </div>
     </div>
@@ -314,6 +350,82 @@ body{font-family:'Noto Sans KR','DM Sans',sans-serif;background:var(--bg);color:
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script>
+/* ═══ ACCESS CODE / AUTH ═══ */
+let ACCESS_CODE = null;
+
+async function doAuth(){
+  const code = document.getElementById('authInput').value.trim();
+  if(!code){ setAuthStatus('보안코드를 입력해주세요','error'); return; }
+  if(code.length < 4){ setAuthStatus('4자 이상 입력해주세요','error'); return; }
+
+  document.getElementById('authBtn').disabled = true;
+  setAuthStatus('연결 중...','');
+
+  ACCESS_CODE = code;
+
+  try {
+    // 서버에서 기존 회의록 불러오기
+    const res = await fetch('/api/meetings', { headers: { 'x-access-code': code } });
+    const data = await res.json();
+
+    if(res.ok && data.meetings) {
+      S.meetings = data.meetings;
+      saveMeetingsLocal();
+    }
+
+    // 로컬에 있는 기존 데이터 마이그레이션
+    const localMeetings = JSON.parse(localStorage.getItem('sg_meetings') || '[]');
+    if(localMeetings.length > 0 && data.meetings) {
+      const serverIds = new Set(data.meetings.map(m => m.id));
+      const newLocal = localMeetings.filter(m => !serverIds.has(m.id));
+      if(newLocal.length > 0) {
+        setAuthStatus(`로컬 회의록 ${newLocal.length}개 업로드 중...`, '');
+        await fetch('/api/meetings', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json', 'x-access-code': code },
+          body: JSON.stringify({ meetings: newLocal })
+        });
+        // 합치기
+        S.meetings = [...data.meetings, ...newLocal];
+        saveMeetingsLocal();
+        setAuthStatus(`✓ 로컬 회의록 ${newLocal.length}개 업로드 완료`, 'success');
+        await new Promise(r => setTimeout(r, 800));
+      }
+    }
+
+    // 인증 성공 → 메인 화면 표시
+    localStorage.setItem('sg_access_code', code);
+    document.getElementById('authScreen').style.display = 'none';
+    document.getElementById('mainApp').style.display = 'flex';
+    init();
+
+  } catch(err) {
+    console.error(err);
+    // 서버 연결 실패 시 로컬 모드로 진입
+    setAuthStatus('서버 연결 실패 — 로컬 모드로 진입합니다', 'error');
+    S.meetings = JSON.parse(localStorage.getItem('sg_meetings') || '[]');
+    await new Promise(r => setTimeout(r, 1200));
+    document.getElementById('authScreen').style.display = 'none';
+    document.getElementById('mainApp').style.display = 'flex';
+    init();
+  } finally {
+    document.getElementById('authBtn').disabled = false;
+  }
+}
+
+function setAuthStatus(msg, type) {
+  const el = document.getElementById('authStatus');
+  el.textContent = msg;
+  el.className = 'auth-status' + (type ? ' ' + type : '');
+}
+
+// 저장된 코드가 있으면 자동 입력
+window.addEventListener('DOMContentLoaded', () => {
+  const saved = localStorage.getItem('sg_access_code');
+  if(saved) {
+    document.getElementById('authInput').value = saved;
+  }
+});
 const T=[
   {id:'general',label:'일반 회의',icon:'💬',tag:'tag-general',hint:'결정사항, 액션아이템, 담당자, 기한, 보류 사항 위주로 정리해주세요.'},
   {id:'kickoff',label:'킥오프',icon:'🚀',tag:'tag-kickoff',hint:'프로젝트/스프린트 목표, 일정, 역할 분담, R&R, 주요 마일스톤, 리스크 위주로 정리해주세요.'},
@@ -350,16 +462,26 @@ function addMs(){const v=document.getElementById('msVersion').value.trim(),n=doc
 function delMs(i){S.ms.splice(i,1);saveMs();renderMs();refreshMsSel();}
 function refreshMsSel(){const sel=document.getElementById('mMilestone');sel.innerHTML='<option value="">마일스톤 (선택)</option>';S.ms.forEach(m=>{const o=document.createElement('option');o.value=m.version;o.textContent=m.version+' — '+m.name;sel.appendChild(o);});}
 
-function saveMeetings(){localStorage.setItem('sg_meetings',JSON.stringify(S.meetings));}
+function saveMeetingsLocal(){localStorage.setItem('sg_meetings',JSON.stringify(S.meetings));}
+function saveMeetings(){saveMeetingsLocal();}
+
+async function syncToCloud(meeting){
+  if(!ACCESS_CODE)return;
+  try{await fetch('/api/meetings',{method:'POST',headers:{'Content-Type':'application/json','x-access-code':ACCESS_CODE},body:JSON.stringify({meeting})});}catch(e){console.error('Cloud sync failed:',e);}
+}
+async function deleteFromCloud(meetingId){
+  if(!ACCESS_CODE)return;
+  try{await fetch('/api/meetings',{method:'DELETE',headers:{'Content-Type':'application/json','x-access-code':ACCESS_CODE},body:JSON.stringify({meetingId})});}catch(e){console.error('Cloud delete failed:',e);}
+}
 function renderList(){const l=document.getElementById('meetingList'),e=document.getElementById('emptyList'),ms=[...S.meetings].reverse();if(!ms.length){e.style.display='block';l.querySelectorAll('.meeting-item').forEach(x=>x.remove());return;}e.style.display='none';l.querySelectorAll('.meeting-item').forEach(x=>x.remove());ms.forEach(m=>{const t=T.find(t=>t.id===m.template)||T[0];const el=document.createElement('div');el.className='meeting-item'+(m.id===S.curId?' active':'');el.innerHTML=`<div class="meeting-item-title">${m.title||'제목 없음'}</div><div class="meeting-item-meta"><span>${m.date||''}</span><span class="meeting-tag ${t.tag}">${t.icon} ${t.label}</span></div>`;el.onclick=()=>loadMeeting(m.id);l.appendChild(el);});}
 
 function newMeeting(){S.curId=null;S.result=null;document.getElementById('mTitle').value='';document.getElementById('mDate').value=new Date().toISOString().split('T')[0];document.getElementById('mTime').value='';document.getElementById('mLocation').value='';document.getElementById('mAttPlanning').value='';document.getElementById('mAttDev').value='';document.getElementById('mAttMgmt').value='';document.getElementById('mAttAi').value='';document.getElementById('mLink1').value='';document.getElementById('mLink2').value='';document.getElementById('mLink3').value='';document.getElementById('mMilestone').value='';document.getElementById('rawInput').value='';document.getElementById('topbarTitle').textContent='새 회의록';selTpl('general');updateCount();showEmpty();renderList();}
 
 function loadMeeting(id){const m=S.meetings.find(x=>x.id===id);if(!m)return;S.curId=id;S.result=m.result;document.getElementById('mTitle').value=m.title||'';document.getElementById('mDate').value=m.date||'';document.getElementById('mTime').value=m.time||'';document.getElementById('mLocation').value=m.location||'';const atts=m.attendees||{};document.getElementById('mAttPlanning').value=atts.planning||'';document.getElementById('mAttDev').value=atts.dev||'';document.getElementById('mAttMgmt').value=atts.mgmt||'';document.getElementById('mAttAi').value=atts.ai||'';document.getElementById('mLink1').value=m.links&&m.links[0]?m.links[0]:'';document.getElementById('mLink2').value=m.links&&m.links[1]?m.links[1]:'';document.getElementById('mLink3').value=m.links&&m.links[2]?m.links[2]:'';document.getElementById('mMilestone').value=m.milestone||'';document.getElementById('rawInput').value=m.raw||'';document.getElementById('topbarTitle').textContent=m.title||'제목 없음';selTpl(m.template||'general');updateCount();if(m.result)renderResult(m.result);renderList();}
 
-function saveMeeting(){if(!S.result)return;const title=document.getElementById('mTitle').value.trim()||'제목 없음';const date=document.getElementById('mDate').value;const time=document.getElementById('mTime').value;const loc=document.getElementById('mLocation').value;const attendees={planning:document.getElementById('mAttPlanning').value.trim(),dev:document.getElementById('mAttDev').value.trim(),mgmt:document.getElementById('mAttMgmt').value.trim(),ai:document.getElementById('mAttAi').value.trim()};const l1=document.getElementById('mLink1').value.trim();const l2=document.getElementById('mLink2').value.trim();const l3=document.getElementById('mLink3').value.trim();const links=[l1,l2,l3].filter(Boolean);const ms=document.getElementById('mMilestone').value,raw=document.getElementById('rawInput').value.trim();if(S.curId){const i=S.meetings.findIndex(m=>m.id===S.curId);if(i!==-1)S.meetings[i]={...S.meetings[i],title,date,time,location:loc,attendees,links,milestone:ms,raw,template:S.tpl,result:S.result};}else{const id=Date.now().toString();S.curId=id;S.meetings.push({id,title,date,time,location:loc,attendees,links,milestone:ms,raw,template:S.tpl,result:S.result});}saveMeetings();renderList();document.getElementById('topbarTitle').textContent=title;showToast('💾 저장되었습니다');}
+function saveMeeting(){if(!S.result)return;const title=document.getElementById('mTitle').value.trim()||'제목 없음';const date=document.getElementById('mDate').value;const time=document.getElementById('mTime').value;const loc=document.getElementById('mLocation').value;const attendees={planning:document.getElementById('mAttPlanning').value.trim(),dev:document.getElementById('mAttDev').value.trim(),mgmt:document.getElementById('mAttMgmt').value.trim(),ai:document.getElementById('mAttAi').value.trim()};const l1=document.getElementById('mLink1').value.trim();const l2=document.getElementById('mLink2').value.trim();const l3=document.getElementById('mLink3').value.trim();const links=[l1,l2,l3].filter(Boolean);const ms=document.getElementById('mMilestone').value,raw=document.getElementById('rawInput').value.trim();let meeting;if(S.curId){const i=S.meetings.findIndex(m=>m.id===S.curId);if(i!==-1){S.meetings[i]={...S.meetings[i],title,date,time,location:loc,attendees,links,milestone:ms,raw,template:S.tpl,result:S.result};meeting=S.meetings[i];}}else{const id=Date.now().toString();S.curId=id;meeting={id,title,date,time,location:loc,attendees,links,milestone:ms,raw,template:S.tpl,result:S.result};S.meetings.push(meeting);}saveMeetings();renderList();document.getElementById('topbarTitle').textContent=title;syncToCloud(meeting);showToast('💾 저장되었습니다');}
 
-function deleteMeeting(){if(!S.curId){showToast('삭제할 회의록이 없습니다');return;}S.meetings=S.meetings.filter(m=>m.id!==S.curId);saveMeetings();newMeeting();showToast('🗑 삭제되었습니다');}
+function deleteMeeting(){if(!S.curId){showToast('삭제할 회의록이 없습니다');return;}const delId=S.curId;S.meetings=S.meetings.filter(m=>m.id!==delId);saveMeetings();deleteFromCloud(delId);newMeeting();showToast('🗑 삭제되었습니다');}
 function updateTitle(){document.getElementById('topbarTitle').textContent=document.getElementById('mTitle').value.trim()||'새 회의록';}
 function updateCount(){document.getElementById('charCount').textContent=document.getElementById('rawInput').value.length.toLocaleString()+'자';}
 

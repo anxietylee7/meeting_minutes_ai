@@ -7,7 +7,8 @@ function hashCode(code) {
 
 export default async function handler(req, res) {
   const { method } = req;
-  const code = req.headers['x-access-code'];
+  // 보안코드: query param, body, header 순서로 확인
+  const code = req.query?.code || req.body?.accessCode || req.headers['x-access-code'];
 
   if (!code) {
     return res.status(401).json({ error: '보안코드가 필요합니다.' });

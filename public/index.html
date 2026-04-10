@@ -170,14 +170,12 @@ body{font-family:'Noto Sans KR','DM Sans',sans-serif;background:var(--bg);color:
 .tag-general{background:rgba(120,110,100,0.1);color:var(--text2);}
 .tag-qa{background:rgba(217,69,69,0.1);color:var(--warn);}
 
-/* 후속 진행 부서 블록 */
 .dept-group{margin-bottom:10px;}
 .dept-group-label{font-size:12px;font-weight:700;margin-bottom:6px;padding-left:2px;}
 .dept-group-box{padding:12px 14px;background:var(--surface);border-radius:var(--radius-sm);border:1px solid var(--border);font-size:13px;line-height:1.7;}
 .dept-group-box ul{margin:0;padding-left:20px;}
 .dept-group-box li{margin-bottom:2px;}
 
-/* 보안코드 입력 화면 */
 .auth-screen{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:999;}
 .auth-card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:40px 36px;width:380px;text-align:center;}
 .auth-logo{display:flex;align-items:center;gap:10px;justify-content:center;margin-bottom:24px;}
@@ -192,7 +190,17 @@ body{font-family:'Noto Sans KR','DM Sans',sans-serif;background:var(--bg);color:
 .auth-status{font-size:11px;color:var(--text3);margin-top:12px;min-height:16px;}
 .auth-status.error{color:var(--warn);}
 .auth-status.success{color:var(--accent3);}
-.auth-migrate{font-size:11px;color:var(--accent);margin-top:8px;}
+
+/* 주간 메모 스타일 */
+.weekly-note-textarea{width:100%;min-height:200px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 12px;color:var(--text);font-size:12px;font-family:inherit;resize:vertical;outline:none;line-height:1.7;transition:border-color 0.15s;}
+.weekly-note-textarea:focus{border-color:var(--accent);}
+.weekly-note-textarea::placeholder{color:var(--text3);}
+.weekly-note-status{font-size:10px;color:var(--text3);min-height:14px;margin-top:2px;}
+.weekly-note-status.saved{color:var(--accent3);}
+.week-selector{display:flex;gap:4px;align-items:center;}
+.week-selector select{background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:5px 8px;color:var(--text);font-size:11px;font-family:inherit;outline:none;}
+.week-nav-btn{width:24px;height:24px;border:1px solid var(--border);background:var(--surface2);border-radius:6px;color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:12px;transition:all 0.15s;}
+.week-nav-btn:hover{border-color:var(--accent);color:var(--accent);}
 </style>
 </head>
 <body>
@@ -240,7 +248,7 @@ body{font-family:'Noto Sans KR','DM Sans',sans-serif;background:var(--bg);color:
     <div class="sidebar-tabs">
       <div class="sidebar-tab active" data-tab="meetings" onclick="switchTab('meetings')">회의록</div>
       <div class="sidebar-tab" data-tab="dictionary" onclick="switchTab('dictionary')">명사집</div>
-      <div class="sidebar-tab" data-tab="milestones" onclick="switchTab('milestones')">마일스톤</div>
+      <div class="sidebar-tab" data-tab="weeklyNotes" onclick="switchTab('weeklyNotes')">주간 메모</div>
     </div>
     <div class="sidebar-panel active" id="panelMeetings">
       <div class="meeting-list" id="meetingList"><div class="empty-list" id="emptyList">저장된 회의록이 없습니다</div></div>
@@ -262,16 +270,32 @@ body{font-family:'Noto Sans KR','DM Sans',sans-serif;background:var(--bg);color:
         <div class="config-list" id="dictList"></div>
       </div>
     </div>
-    <div class="sidebar-panel" id="panelMilestones">
+    <!-- ★ 주간 메모 패널 -->
+    <div class="sidebar-panel" id="panelWeeklyNotes">
       <div class="config-panel">
-        <div style="display:flex;align-items:center;justify-content:space-between;"><div class="config-section-title">버전 / 마일스톤</div><span class="config-count" id="msCount">0개</span></div>
-        <div class="config-desc">운용 중인 마일스톤을 등록하면 회의 내용에서 자동 태깅됩니다.</div>
-        <div class="config-add-row">
-          <input class="config-input" id="msVersion" placeholder="버전" style="width:55px;flex:none">
-          <input class="config-input" id="msName" placeholder="이름 (예: 4월 마일스톤)">
-          <button class="btn-config" onclick="addMs()">추가</button>
+        <div class="config-section-title">📝 주간 메모</div>
+        <div class="config-desc">회의록까지 작성하지 않아도 간단히 메모할 내용을 주차별로 기록하세요.<br>주간보고 자동 불러오기 시 함께 반영됩니다.</div>
+        <div class="week-selector">
+          <button class="week-nav-btn" onclick="moveWeek(-1)">◀</button>
+          <select id="wnYear" onchange="loadWeeklyNote()" style="width:70px;"></select>
+          <select id="wnMonth" onchange="loadWeeklyNote()">
+            <option value="1">1월</option><option value="2">2월</option><option value="3">3월</option><option value="4">4월</option><option value="5">5월</option><option value="6">6월</option><option value="7">7월</option><option value="8">8월</option><option value="9">9월</option><option value="10">10월</option><option value="11">11월</option><option value="12">12월</option>
+          </select>
+          <select id="wnWeek" onchange="loadWeeklyNote()">
+            <option value="1">1주</option><option value="2">2주</option><option value="3">3주</option><option value="4">4주</option><option value="5">5주</option>
+          </select>
+          <button class="week-nav-btn" onclick="moveWeek(1)">▶</button>
         </div>
-        <div class="config-list" id="msList"></div>
+        <textarea class="weekly-note-textarea" id="wnText" placeholder="이번 주 간단한 메모를 작성하세요.
+
+예시:
+- 화요일 팀장님과 우선순위 조정 논의
+- AI 번역 관련 내부 검토 요청함
+- 패턴 염색 기능 1차 개발 완료"></textarea>
+        <div style="display:flex;gap:6px;align-items:center;">
+          <button class="btn-config" onclick="saveWeeklyNote()" style="flex:1;text-align:center;padding:8px 12px;">💾 저장</button>
+          <div class="weekly-note-status" id="wnStatus"></div>
+        </div>
       </div>
     </div>
   </div>
@@ -308,15 +332,7 @@ body{font-family:'Noto Sans KR','DM Sans',sans-serif;background:var(--bg);color:
             <input class="meta-input" id="mDate" type="date">
             <select class="meta-select" id="mTime">
               <option value="">시간 (선택)</option>
-              <option value="09:00~10:00">09:00~10:00</option>
-              <option value="10:00~11:00">10:00~11:00</option>
-              <option value="11:00~12:00">11:00~12:00</option>
-              <option value="12:00~13:00">12:00~13:00</option>
-              <option value="13:00~14:00">13:00~14:00</option>
-              <option value="14:00~15:00">14:00~15:00</option>
-              <option value="15:00~16:00">15:00~16:00</option>
-              <option value="16:00~17:00">16:00~17:00</option>
-              <option value="17:00~18:00">17:00~18:00</option>
+              <option value="09:00~10:00">09:00~10:00</option><option value="10:00~11:00">10:00~11:00</option><option value="11:00~12:00">11:00~12:00</option><option value="12:00~13:00">12:00~13:00</option><option value="13:00~14:00">13:00~14:00</option><option value="14:00~15:00">14:00~15:00</option><option value="15:00~16:00">15:00~16:00</option><option value="16:00~17:00">16:00~17:00</option><option value="17:00~18:00">17:00~18:00</option>
             </select>
             <select class="meta-select" id="mLocation">
               <option value="">회의 장소 (선택)</option>
@@ -367,75 +383,42 @@ async function doAuth(){
   const code = document.getElementById('authInput').value.trim();
   if(!code){ setAuthStatus('보안코드를 입력해주세요','error'); return; }
   if(code.length < 4){ setAuthStatus('4자 이상 입력해주세요','error'); return; }
-
   document.getElementById('authBtn').disabled = true;
   setAuthStatus('연결 중...','');
-
   ACCESS_CODE = code;
-
   try {
-    // 서버에서 기존 회의록 불러오기
     const res = await fetch('/api/meetings?code=' + encodeURIComponent(code));
     const data = await res.json();
-
-    if(res.ok && data.meetings) {
-      S.meetings = data.meetings;
-      saveMeetingsLocal();
-    }
-
-    // 로컬에 있는 기존 데이터 마이그레이션
+    if(res.ok && data.meetings) { S.meetings = data.meetings; saveMeetingsLocal(); }
     const localMeetings = JSON.parse(localStorage.getItem('sg_meetings') || '[]');
     if(localMeetings.length > 0 && data.meetings) {
       const serverIds = new Set(data.meetings.map(m => m.id));
       const newLocal = localMeetings.filter(m => !serverIds.has(m.id));
       if(newLocal.length > 0) {
         setAuthStatus(`로컬 회의록 ${newLocal.length}개 업로드 중...`, '');
-        await fetch('/api/meetings', {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ meetings: newLocal, accessCode: code })
-        });
-        // 합치기
-        S.meetings = [...data.meetings, ...newLocal];
-        saveMeetingsLocal();
+        await fetch('/api/meetings', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ meetings: newLocal, accessCode: code }) });
+        S.meetings = [...data.meetings, ...newLocal]; saveMeetingsLocal();
         setAuthStatus(`✓ 로컬 회의록 ${newLocal.length}개 업로드 완료`, 'success');
         await new Promise(r => setTimeout(r, 800));
       }
     }
-
-    // 인증 성공 → 메인 화면 표시
     localStorage.setItem('sg_access_code', code);
     document.getElementById('authScreen').style.display = 'none';
     document.getElementById('mainApp').style.display = 'flex';
     init();
-
   } catch(err) {
     console.error(err);
-    // 서버 연결 실패 시 로컬 모드로 진입
     setAuthStatus('서버 연결 실패 — 로컬 모드로 진입합니다', 'error');
     S.meetings = JSON.parse(localStorage.getItem('sg_meetings') || '[]');
     await new Promise(r => setTimeout(r, 1200));
     document.getElementById('authScreen').style.display = 'none';
     document.getElementById('mainApp').style.display = 'flex';
     init();
-  } finally {
-    document.getElementById('authBtn').disabled = false;
-  }
+  } finally { document.getElementById('authBtn').disabled = false; }
 }
+function setAuthStatus(msg, type) { const el = document.getElementById('authStatus'); el.textContent = msg; el.className = 'auth-status' + (type ? ' ' + type : ''); }
+window.addEventListener('DOMContentLoaded', () => { const saved = localStorage.getItem('sg_access_code'); if(saved) document.getElementById('authInput').value = saved; });
 
-function setAuthStatus(msg, type) {
-  const el = document.getElementById('authStatus');
-  el.textContent = msg;
-  el.className = 'auth-status' + (type ? ' ' + type : '');
-}
-
-// 저장된 코드가 있으면 자동 입력
-window.addEventListener('DOMContentLoaded', () => {
-  const saved = localStorage.getItem('sg_access_code');
-  if(saved) {
-    document.getElementById('authInput').value = saved;
-  }
-});
 const T=[
   {id:'general',label:'일반 회의',icon:'💬',tag:'tag-general',hint:'결정사항, 액션아이템, 담당자, 기한, 보류 사항 위주로 정리해주세요.'},
   {id:'kickoff',label:'킥오프',icon:'🚀',tag:'tag-kickoff',hint:'프로젝트/스프린트 목표, 일정, 역할 분담, R&R, 주요 마일스톤, 리스크 위주로 정리해주세요.'},
@@ -444,6 +427,7 @@ const T=[
   {id:'qa',label:'QA 리뷰',icon:'🐛',tag:'tag-qa',hint:'버그 목록, 심각도, 재현 경로, 우선순위, 담당자, 해결 기한 위주로 정리해주세요.'},
 ];
 
+// 마일스톤 데이터 (로컬 저장 유지)
 if(!localStorage.getItem('sg_ms_version_4')){
   localStorage.setItem('sg_ms',JSON.stringify([{"version":"M28","name":"전체 마일스톤"},{"version":"M28_4월","name":"4월 마일스톤"},{"version":"M28_5월","name":"5월 마일스톤"},{"version":"M28_6월","name":"6월 마일스톤"}]));
   localStorage.setItem('sg_ms_version_4','true');
@@ -455,7 +439,7 @@ function init(){
   document.getElementById('mDate').value=new Date().toISOString().split('T')[0];
   const c=document.getElementById('templateChips');
   T.forEach(t=>{const el=document.createElement('button');el.className='chip'+(t.id===S.tpl?' active':'');el.textContent=t.icon+' '+t.label;el.onclick=()=>selTpl(t.id);el.dataset.id=t.id;c.appendChild(el);});
-  renderList();renderDict();renderMs();refreshMsSel();
+  renderList();renderDict();refreshMsSel();initWeeklyNotes();
 }
 function selTpl(id){S.tpl=id;document.querySelectorAll('.chip').forEach(c=>c.classList.toggle('active',c.dataset.id===id));}
 function switchTab(t){document.querySelectorAll('.sidebar-tab').forEach(e=>e.classList.toggle('active',e.dataset.tab===t));document.querySelectorAll('.sidebar-panel').forEach(p=>p.classList.remove('active'));document.getElementById('panel'+t.charAt(0).toUpperCase()+t.slice(1)).classList.add('active');}
@@ -466,11 +450,129 @@ function addDict(){const n=document.getElementById('dictName').value.trim(),d=do
 function delDict(i){S.dict.splice(i,1);saveDict();renderDict();}
 function handleExcelUpload(e){const file=e.target.files[0];if(!file)return;const reader=new FileReader();reader.onload=function(ev){try{const wb=XLSX.read(ev.target.result,{type:'array'});const ws=wb.Sheets[wb.SheetNames[0]];const data=XLSX.utils.sheet_to_json(ws,{header:1});let added=0;const startRow=data[0]&&(typeof data[0][0]==='string')&&['용어','이름','name','term','명칭'].some(k=>data[0][0].toLowerCase().includes(k.toLowerCase()))?1:0;for(let i=startRow;i<data.length;i++){const row=data[i];if(!row||!row[0])continue;const name=String(row[0]).trim();const desc=row[1]?String(row[1]).trim():'';if(name&&!S.dict.some(d=>d.name===name)){S.dict.push({name,desc});added++;}}saveDict();renderDict();showToast(`📎 ${added}개 용어가 추가되었습니다`);}catch(err){showToast('❌ 파일 읽기 실패: '+err.message);}};reader.readAsArrayBuffer(file);e.target.value='';}
 
-function saveMs(){localStorage.setItem('sg_ms',JSON.stringify(S.ms));}
-function renderMs(){const l=document.getElementById('msList');l.innerHTML='';document.getElementById('msCount').textContent=S.ms.length+'개';S.ms.forEach((m,i)=>{const e=document.createElement('div');e.className='config-item';e.innerHTML=`<span class="ms-badge">${m.version}</span><span class="config-item-name">${m.name}</span><button class="config-item-del" onclick="delMs(${i})">✕</button>`;l.appendChild(e);});}
-function addMs(){const v=document.getElementById('msVersion').value.trim(),n=document.getElementById('msName').value.trim();if(!v||!n){showToast('버전과 이름 모두 입력해주세요');return;}S.ms.push({version:v,name:n});saveMs();renderMs();refreshMsSel();document.getElementById('msVersion').value='';document.getElementById('msName').value='';}
-function delMs(i){S.ms.splice(i,1);saveMs();renderMs();refreshMsSel();}
+// 마일스톤 (드롭다운 유지)
 function refreshMsSel(){const sel=document.getElementById('mMilestone');sel.innerHTML='<option value="">마일스톤 (선택)</option>';S.ms.forEach(m=>{const o=document.createElement('option');o.value=m.version;o.textContent=m.version+' — '+m.name;sel.appendChild(o);});}
+
+/* ═══ 주간 메모 ═══ */
+let wnSaveTimer = null;
+
+function initWeeklyNotes(){
+  const now = new Date();
+  const yearSel = document.getElementById('wnYear');
+  const curYear = now.getFullYear();
+  for(let y = curYear - 1; y <= curYear + 1; y++){
+    const o = document.createElement('option');
+    o.value = y; o.textContent = y + '년';
+    if(y === curYear) o.selected = true;
+    yearSel.appendChild(o);
+  }
+  document.getElementById('wnMonth').value = String(now.getMonth() + 1);
+  // 현재 주차 계산
+  const weekNum = getCurrentWeekOfMonth(now);
+  document.getElementById('wnWeek').value = String(weekNum);
+  loadWeeklyNote();
+}
+
+function getCurrentWeekOfMonth(date){
+  const first = new Date(date.getFullYear(), date.getMonth(), 1);
+  const dayOfWeek = first.getDay() || 7;
+  const firstMonday = new Date(first);
+  firstMonday.setDate(first.getDate() - dayOfWeek + 1);
+  const diff = Math.floor((date - firstMonday) / (7 * 86400000));
+  return Math.max(1, Math.min(5, diff + 1));
+}
+
+function getWeeklyNoteKey(){
+  const y = document.getElementById('wnYear').value;
+  const m = document.getElementById('wnMonth').value;
+  const w = document.getElementById('wnWeek').value;
+  return `${y}-${m.padStart(2,'0')}-W${w}`;
+}
+
+function moveWeek(dir){
+  const wSel = document.getElementById('wnWeek');
+  const mSel = document.getElementById('wnMonth');
+  const ySel = document.getElementById('wnYear');
+  let w = parseInt(wSel.value) + dir;
+  let m = parseInt(mSel.value);
+  let y = parseInt(ySel.value);
+  if(w > 5){ w = 1; m++; }
+  if(w < 1){ w = 5; m--; }
+  if(m > 12){ m = 1; y++; }
+  if(m < 1){ m = 12; y--; }
+  ySel.value = y; mSel.value = m; wSel.value = w;
+  loadWeeklyNote();
+}
+
+async function loadWeeklyNote(){
+  const key = getWeeklyNoteKey();
+  const textarea = document.getElementById('wnText');
+  const status = document.getElementById('wnStatus');
+  textarea.value = '';
+  status.textContent = '불러오는 중...';
+  status.className = 'weekly-note-status';
+
+  // 로컬 먼저 확인
+  const local = localStorage.getItem('sg_wn_' + key);
+  if(local) textarea.value = local;
+
+  // 서버에서 불러오기
+  if(ACCESS_CODE){
+    try {
+      const res = await fetch('/api/weekly-notes?code=' + encodeURIComponent(ACCESS_CODE) + '&key=' + encodeURIComponent(key));
+      const data = await res.json();
+      if(res.ok && data.text !== undefined){
+        textarea.value = data.text;
+        localStorage.setItem('sg_wn_' + key, data.text);
+        status.textContent = data.text ? '✓ 불러옴' : '';
+        status.className = 'weekly-note-status saved';
+      } else {
+        status.textContent = local ? '(로컬 데이터)' : '';
+      }
+    } catch(e){
+      status.textContent = local ? '(로컬 데이터)' : '';
+    }
+  } else {
+    status.textContent = local ? '(로컬 데이터)' : '';
+  }
+}
+
+async function saveWeeklyNote(){
+  const key = getWeeklyNoteKey();
+  const text = document.getElementById('wnText').value;
+  const status = document.getElementById('wnStatus');
+
+  // 로컬 저장
+  localStorage.setItem('sg_wn_' + key, text);
+
+  // 서버 저장
+  if(ACCESS_CODE){
+    status.textContent = '저장 중...';
+    status.className = 'weekly-note-status';
+    try {
+      const res = await fetch('/api/weekly-notes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ accessCode: ACCESS_CODE, key, text })
+      });
+      if(res.ok){
+        status.textContent = '✓ 저장 완료';
+        status.className = 'weekly-note-status saved';
+        showToast('📝 주간 메모가 저장되었습니다');
+      } else {
+        throw new Error();
+      }
+    } catch(e){
+      status.textContent = '⚠ 서버 저장 실패 (로컬에만 저장됨)';
+      status.className = 'weekly-note-status';
+      showToast('📝 로컬에만 저장되었습니다');
+    }
+  } else {
+    status.textContent = '✓ 로컬 저장 완료';
+    status.className = 'weekly-note-status saved';
+    showToast('📝 로컬에 저장되었습니다');
+  }
+}
 
 function saveMeetingsLocal(){localStorage.setItem('sg_meetings',JSON.stringify(S.meetings));}
 function saveMeetings(){saveMeetingsLocal();}
@@ -514,143 +616,56 @@ async function generate(){
 }
 
 function showEmpty(){document.getElementById('statusDot').classList.remove('active');document.getElementById('saveBtn').disabled=true;document.getElementById('resultBody').innerHTML=`<div class="empty-state"><div class="empty-icon">✦</div><div class="empty-text">회의 내용을 입력하고 생성하세요</div></div>`;}
-
 function cleanMarkdownList(val,enforceList=false){if(!val)return'';let str=Array.isArray(val)?val.join('\n'):String(val);str=str.replace(/^[ \t]*-[ \t]*[◦▪ㅇ][ \t]*/gm,'  - ');str=str.replace(/^[ \t]*[◦▪ㅇ][ \t]*/gm,'  - ');if(enforceList&&!str.includes('- ')){str=str.split('\n').filter(line=>line.trim().length>0).map(line=>'- '+line.trim()).join('\n');}return str;}
 
 function renderResult(r){
   const tpl=T.find(t=>t.id===r.template);let h='<div class="result-content">';
-
-  // 메타 정보
-  const dateTime = (r.date||'-') + (r.time ? ' ' + r.time : '');
-  h+=`<div class="result-meta">
-    <div class="result-meta-item"><div class="result-meta-label">날짜/시간</div><div class="result-meta-value">${dateTime}</div></div>
-    <div class="result-meta-item"><div class="result-meta-label">장소</div><div class="result-meta-value">${r.location||'-'}</div></div>
-    <div class="result-meta-item"><div class="result-meta-label">유형</div><div class="result-meta-value">${tpl?.label||'-'}</div></div>
-    <div class="result-meta-item" style="flex-basis:100%;margin-top:4px;"><div class="result-meta-label">참석자</div><div class="result-meta-value">${formatAttendees(r.attendees,true)}</div></div>
-    ${r.links&&r.links.length>0?`<div class="result-meta-item" style="flex-basis:100%;margin-top:4px;"><div class="result-meta-label">참고 링크</div><div class="result-meta-value">${r.links.map(l=>`<a href="${l}" target="_blank" style="color:var(--accent);margin-right:12px;word-break:break-all;">${l}</a>`).join('')}</div></div>`:''}
-  </div>`;
-
+  const dateTime=(r.date||'-')+(r.time?' '+r.time:'');
+  h+=`<div class="result-meta"><div class="result-meta-item"><div class="result-meta-label">날짜/시간</div><div class="result-meta-value">${dateTime}</div></div><div class="result-meta-item"><div class="result-meta-label">장소</div><div class="result-meta-value">${r.location||'-'}</div></div><div class="result-meta-item"><div class="result-meta-label">유형</div><div class="result-meta-value">${tpl?.label||'-'}</div></div><div class="result-meta-item" style="flex-basis:100%;margin-top:4px;"><div class="result-meta-label">참석자</div><div class="result-meta-value">${formatAttendees(r.attendees,true)}</div></div>${r.links&&r.links.length>0?`<div class="result-meta-item" style="flex-basis:100%;margin-top:4px;"><div class="result-meta-label">참고 링크</div><div class="result-meta-value">${r.links.map(l=>`<a href="${l}" target="_blank" style="color:var(--accent);margin-right:12px;word-break:break-all;">${l}</a>`).join('')}</div></div>`:''}</div>`;
   if(r.milestones?.length){h+='<div style="display:flex;gap:6px;flex-wrap:wrap;">';r.milestones.forEach(ms=>{const f=S.ms.find(m=>m.version===ms);h+=`<span class="result-ms-tag">🏷️ ${ms}${f?' — '+f.name:''}</span>`;});h+='</div>';}
-
-  const kpStr=cleanMarkdownList(r.keyPoints,true);
-  const fsStr=cleanMarkdownList(r.fullSummary,true);
-  const etcStr=cleanMarkdownList(r.etc);
-
+  const kpStr=cleanMarkdownList(r.keyPoints,true);const fsStr=cleanMarkdownList(r.fullSummary,true);const etcStr=cleanMarkdownList(r.etc);
   if(kpStr)h+=`<div class="result-section"><div class="result-section-title">💡 핵심 요약</div><div class="summary-box">${marked.parse(kpStr)}</div></div>`;
   if(fsStr)h+=`<div class="result-section"><div class="result-section-title">📝 전체 내용 요약</div><div class="summary-box">${marked.parse(fsStr)}</div></div>`;
   if(r.decisions?.length){h+=`<div class="result-section"><div class="result-section-title">✅ 결정사항</div><div class="summary-box"><ul>`;r.decisions.forEach(d=>h+=`<li>${d}</li>`);h+=`</ul></div></div>`;}
-
-  // ── 후속 진행: 부서별 그룹 + 항목별 카드 ──
   if(r.followUps&&Object.keys(r.followUps).length>0){
     h+=`<div class="result-section"><div class="result-section-title">🎯 후속 진행</div>`;
-    if(r.followUps._deadline){h+=`<div style="padding:8px 12px;background:var(--accent-light);border-radius:var(--radius-sm);border:1px solid rgba(224,107,32,0.2);font-size:13px;font-weight:600;color:var(--accent);margin-bottom:8px;">📅 ${r.followUps._deadline}</div>`;}
-    const depts=[
-      {key:'planning',label:'기획실',color:'#6B42B4'},
-      {key:'development',label:'개발실',color:'#2A78BE'},
-      {key:'management',label:'개발관리실',color:'#C85A18'},
-      {key:'ai',label:'AI센터',color:'#2A9E6F'}
-    ];
-    depts.forEach(dept=>{
-      const items=r.followUps[dept.key];
-      if(items&&items.length>0){
-        h+=`<div class="dept-group">`;
-        h+=`<div class="dept-group-label" style="color:${dept.color};">${dept.label}</div>`;
-        h+=`<div class="dept-group-box"><ul>`;
-        items.forEach(a=>{
-          const task=a.task||(typeof a==='string'?a:'');
-          const assignee=a.assignee||'';
-          h+=`<li>${task}${assignee?' <span style="font-size:10px;font-weight:600;color:'+dept.color+';">('+assignee+')</span>':''}</li>`;
-        });
-        h+=`</ul></div></div>`;
-      }
-    });
+    if(r.followUps._deadline)h+=`<div style="padding:8px 12px;background:var(--accent-light);border-radius:var(--radius-sm);border:1px solid rgba(224,107,32,0.2);font-size:13px;font-weight:600;color:var(--accent);margin-bottom:8px;">📅 ${r.followUps._deadline}</div>`;
+    [{key:'planning',label:'기획실',color:'#6B42B4'},{key:'development',label:'개발실',color:'#2A78BE'},{key:'management',label:'개발관리실',color:'#C85A18'},{key:'ai',label:'AI센터',color:'#2A9E6F'}].forEach(dept=>{const items=r.followUps[dept.key];if(items&&items.length>0){h+=`<div class="dept-group"><div class="dept-group-label" style="color:${dept.color};">${dept.label}</div><div class="dept-group-box"><ul>`;items.forEach(a=>{const task=a.task||(typeof a==='string'?a:'');const assignee=a.assignee||'';h+=`<li>${task}${assignee?' <span style="font-size:10px;font-weight:600;color:'+dept.color+';">('+assignee+')</span>':''}</li>`;});h+=`</ul></div></div>`;}});
     h+='</div>';
   }
-
-  // 논의 필요 / 미결
-  const disc=r.followUps?.discussion||[];
-  const pend=r.pending||[];
-  if(disc.length>0||pend.length>0){
-    h+=`<div class="result-section"><div class="result-section-title">⏳ 논의 필요 / 미결</div><div class="summary-box"><ul>`;
-    disc.forEach(d=>{const txt=d.task||(typeof d==='string'?d:'');h+=`<li>${txt}</li>`;});
-    pend.forEach(p=>h+=`<li>${p}</li>`);
-    h+=`</ul></div></div>`;
-  }
-
+  const disc=r.followUps?.discussion||[];const pend=r.pending||[];
+  if(disc.length>0||pend.length>0){h+=`<div class="result-section"><div class="result-section-title">⏳ 논의 필요 / 미결</div><div class="summary-box"><ul>`;disc.forEach(d=>{const txt=d.task||(typeof d==='string'?d:'');h+=`<li>${txt}</li>`;});pend.forEach(p=>h+=`<li>${p}</li>`);h+=`</ul></div></div>`;}
   if(r.issues?.length){const issueTitle=S.tpl==='plan'?'⚠️ 이슈/리스크 및 고려사항':'⚠️ 이슈/리스크';h+=`<div class="result-section"><div class="result-section-title">${issueTitle}</div><div class="summary-box"><ul>`;r.issues.forEach(i=>h+=`<li>${i}</li>`);h+=`</ul></div></div>`;}
   if(etcStr)h+=`<div class="result-section"><div class="result-section-title">💬 기타</div><div class="summary-box">${etcStr.replace(/\n/g,'<br>')}</div></div>`;
   h+='</div>';document.getElementById('resultBody').innerHTML=h;
 }
 
-/* ═══ CONFLUENCE COPY ═══ */
+/* ═══ CONFLUENCE COPY (기존과 동일) ═══ */
 async function copyResult(){
   if(!S.result){showToast('복사할 내용이 없습니다');return;}
-  const r=S.result, t=T.find(t=>t.id===r.template);
-  const title=document.getElementById('mTitle').value||'회의록';
-  const kpStr=cleanMarkdownList(r.keyPoints,true);
-  const fsStr=cleanMarkdownList(r.fullSummary,true);
-  const etcStr=cleanMarkdownList(r.etc);
-  const dateTime=(r.date||'-')+(r.time?' '+r.time:'');
-
-  const atts=r.attendees||{};
-  let attRows='';
-  if(atts.planning)attRows+=`<tr><td bgcolor="#f0f0f0" width="120"><strong>기획실</strong></td><td>${atts.planning}</td></tr>`;
-  if(atts.dev)attRows+=`<tr><td bgcolor="#f0f0f0" width="120"><strong>개발실</strong></td><td>${atts.dev}</td></tr>`;
-  if(atts.mgmt)attRows+=`<tr><td bgcolor="#f0f0f0" width="120"><strong>개발관리실</strong></td><td>${atts.mgmt}</td></tr>`;
-  if(atts.ai)attRows+=`<tr><td bgcolor="#f0f0f0" width="120"><strong>AI센터</strong></td><td>${atts.ai}</td></tr>`;
-
+  const r=S.result,t=T.find(t=>t.id===r.template);const title=document.getElementById('mTitle').value||'회의록';const kpStr=cleanMarkdownList(r.keyPoints,true);const fsStr=cleanMarkdownList(r.fullSummary,true);const etcStr=cleanMarkdownList(r.etc);const dateTime=(r.date||'-')+(r.time?' '+r.time:'');
+  const atts=r.attendees||{};let attRows='';if(atts.planning)attRows+=`<tr><td bgcolor="#f0f0f0" width="120"><strong>기획실</strong></td><td>${atts.planning}</td></tr>`;if(atts.dev)attRows+=`<tr><td bgcolor="#f0f0f0" width="120"><strong>개발실</strong></td><td>${atts.dev}</td></tr>`;if(atts.mgmt)attRows+=`<tr><td bgcolor="#f0f0f0" width="120"><strong>개발관리실</strong></td><td>${atts.mgmt}</td></tr>`;if(atts.ai)attRows+=`<tr><td bgcolor="#f0f0f0" width="120"><strong>AI센터</strong></td><td>${atts.ai}</td></tr>`;
   const deptMap={planning:{label:'기획실',color:'#6B42B4',bg:'#f3eef9'},development:{label:'개발실',color:'#2A78BE',bg:'#edf4fb'},management:{label:'개발관리실',color:'#C85A18',bg:'#fdf0e8'},ai:{label:'AI센터',color:'#2A9E6F',bg:'#ecf8f3'}};
-
-  let html = `<h1>${t?.icon||''} [${t?.label||'회의'}] ${title}</h1>`;
-  if(r.milestones?.length){html+=`<p>`;r.milestones.forEach(ms=>{const f=S.ms.find(m=>m.version===ms);html+=`<strong>🏷️ ${ms}${f?' — '+f.name:''}</strong>&nbsp;&nbsp;`;});html+=`</p>`;}
-
-  html+=`<table border="1" cellpadding="8" cellspacing="0" width="100%"><tbody>
-    <tr><td bgcolor="#f4f5f7" width="120"><strong>날짜/시간</strong></td><td width="200">${dateTime}</td><td bgcolor="#f4f5f7" width="120"><strong>장소</strong></td><td>${r.location||'-'}</td></tr>
-    <tr><td bgcolor="#f4f5f7"><strong>유형</strong></td><td>${t?.label||'-'}</td><td bgcolor="#f4f5f7"><strong>마일스톤</strong></td><td>${r.milestones?.length?r.milestones.join(', '):'-'}</td></tr>
-  </tbody></table>`;
-
+  let html=`<h1>${t?.icon||''} [${t?.label||'회의'}] ${title}</h1>`;if(r.milestones?.length){html+=`<p>`;r.milestones.forEach(ms=>{const f=S.ms.find(m=>m.version===ms);html+=`<strong>🏷️ ${ms}${f?' — '+f.name:''}</strong>&nbsp;&nbsp;`;});html+=`</p>`;}
+  html+=`<table border="1" cellpadding="8" cellspacing="0" width="100%"><tbody><tr><td bgcolor="#f4f5f7" width="120"><strong>날짜/시간</strong></td><td width="200">${dateTime}</td><td bgcolor="#f4f5f7" width="120"><strong>장소</strong></td><td>${r.location||'-'}</td></tr><tr><td bgcolor="#f4f5f7"><strong>유형</strong></td><td>${t?.label||'-'}</td><td bgcolor="#f4f5f7"><strong>마일스톤</strong></td><td>${r.milestones?.length?r.milestones.join(', '):'-'}</td></tr></tbody></table>`;
   if(attRows)html+=`<h2>👥 참석자</h2><table border="1" cellpadding="8" cellspacing="0" width="100%"><tbody>${attRows}</tbody></table>`;
   if(r.links&&r.links.length>0){html+=`<h2>🔗 참고 링크</h2><ul>`;r.links.forEach(l=>html+=`<li><a href="${l}">${l}</a></li>`);html+=`</ul>`;}
-  if(kpStr){html+=`<h2>💡 핵심 요약</h2><table border="0" cellpadding="12" cellspacing="0" width="100%"><tbody><tr><td bgcolor="#fffbe6">${markdownToConfluenceList(kpStr)}</td></tr></tbody></table>`;}
-  if(fsStr){html+=`<h2>📝 전체 내용 요약</h2>${markdownToConfluenceList(fsStr)}`;}
+  if(kpStr)html+=`<h2>💡 핵심 요약</h2><table border="0" cellpadding="12" cellspacing="0" width="100%"><tbody><tr><td bgcolor="#fffbe6">${markdownToConfluenceList(kpStr)}</td></tr></tbody></table>`;
+  if(fsStr)html+=`<h2>📝 전체 내용 요약</h2>${markdownToConfluenceList(fsStr)}`;
   if(r.decisions?.length){html+=`<h2>✅ 결정사항</h2><table border="1" cellpadding="8" cellspacing="0" width="100%"><tbody><tr><td bgcolor="#e3fcef" width="30"><strong>#</strong></td><td bgcolor="#e3fcef"><strong>결정 내용</strong></td></tr>`;r.decisions.forEach((d,i)=>html+=`<tr><td>${i+1}</td><td>${d}</td></tr>`);html+=`</tbody></table>`;}
-
-  if(r.followUps&&Object.keys(r.followUps).length>0){
-    html+=`<h2>🎯 후속 진행</h2><table border="1" cellpadding="8" cellspacing="0" width="100%"><tbody><tr><td bgcolor="#deebff" width="120"><strong>부서</strong></td><td bgcolor="#deebff"><strong>할 일</strong></td><td bgcolor="#deebff" width="120"><strong>담당자</strong></td></tr>`;
-    Object.keys(deptMap).forEach(key=>{const items=r.followUps[key];if(items&&items.length>0){items.forEach((a,i)=>{const task=a.task||(typeof a==='string'?a:'');const assignee=a.assignee||'';html+=`<tr>`;if(i===0)html+=`<td bgcolor="${deptMap[key].bg}" rowspan="${items.length}"><strong>${deptMap[key].label}</strong></td>`;html+=`<td>${task}</td><td>${assignee||'-'}</td></tr>`;});}});
-    html+=`</tbody></table>`;
-  }
-
-  const discItems=r.followUps?.discussion||[];const pendItems=r.pending||[];
-  if(discItems.length>0||pendItems.length>0){html+=`<h2>⏳ 논의 필요 / 미결</h2><table border="1" cellpadding="8" cellspacing="0" width="100%"><tbody><tr><td bgcolor="#fff7e6"><strong>⏳</strong></td><td bgcolor="#fff7e6"><strong>미결 사항</strong></td></tr>`;discItems.forEach(d=>{const txt=d.task||(typeof d==='string'?d:'');html+=`<tr><td width="30">•</td><td>${txt}</td></tr>`;});pendItems.forEach(p=>html+=`<tr><td width="30">•</td><td>${p}</td></tr>`);html+=`</tbody></table>`;}
-
+  if(r.followUps&&Object.keys(r.followUps).length>0){html+=`<h2>🎯 후속 진행</h2><table border="1" cellpadding="8" cellspacing="0" width="100%"><tbody><tr><td bgcolor="#deebff" width="120"><strong>부서</strong></td><td bgcolor="#deebff"><strong>할 일</strong></td><td bgcolor="#deebff" width="120"><strong>담당자</strong></td></tr>`;Object.keys(deptMap).forEach(key=>{const items=r.followUps[key];if(items&&items.length>0){items.forEach((a,i)=>{const task=a.task||(typeof a==='string'?a:'');const assignee=a.assignee||'';html+=`<tr>`;if(i===0)html+=`<td bgcolor="${deptMap[key].bg}" rowspan="${items.length}"><strong>${deptMap[key].label}</strong></td>`;html+=`<td>${task}</td><td>${assignee||'-'}</td></tr>`;});}});html+=`</tbody></table>`;}
+  const discItems=r.followUps?.discussion||[];const pendItems=r.pending||[];if(discItems.length>0||pendItems.length>0){html+=`<h2>⏳ 논의 필요 / 미결</h2><table border="1" cellpadding="8" cellspacing="0" width="100%"><tbody><tr><td bgcolor="#fff7e6"><strong>⏳</strong></td><td bgcolor="#fff7e6"><strong>미결 사항</strong></td></tr>`;discItems.forEach(d=>{const txt=d.task||(typeof d==='string'?d:'');html+=`<tr><td width="30">•</td><td>${txt}</td></tr>`;});pendItems.forEach(p=>html+=`<tr><td width="30">•</td><td>${p}</td></tr>`);html+=`</tbody></table>`;}
   if(r.issues?.length){const il=S.tpl==='plan'?'이슈/리스크 및 고려사항':'이슈/리스크';html+=`<h2>⚠️ ${il}</h2><table border="1" cellpadding="8" cellspacing="0" width="100%"><tbody><tr><td bgcolor="#ffebe6"><strong>⚠️</strong></td><td bgcolor="#ffebe6"><strong>${il}</strong></td></tr>`;r.issues.forEach(i=>html+=`<tr><td width="30">•</td><td>${i}</td></tr>`);html+=`</tbody></table>`;}
   if(etcStr)html+=`<h2>💬 기타</h2><p>${etcStr.replace(/\n/g,'<br>')}</p>`;
   html+=`<hr><p><em>Generated by SMILEGATE MEETING AI · ${new Date().toLocaleDateString('ko-KR')}</em></p>`;
-
-  let plain=`# [${t?.label||'회의'}] ${title}\n날짜: ${dateTime} | 장소: ${r.location||'-'}\n`;
-  if(r.milestones?.length)plain+=`마일스톤: ${r.milestones.join(', ')}\n`;
-  plain+=`\n참석자:\n${formatAttendees(r.attendees,false)}\n`;
-  if(r.links&&r.links.length>0)plain+=`\n참고 링크:\n${r.links.map(l=>'- '+l).join('\n')}\n`;plain+='\n';
-  if(kpStr)plain+=`## 핵심 요약\n${kpStr}\n\n`;
-  if(fsStr)plain+=`## 전체 내용 요약\n${fsStr}\n\n`;
-  if(r.decisions?.length)plain+=`## 결정사항\n${r.decisions.map((d,i)=>`${i+1}. ${d}`).join('\n')}\n\n`;
-  if(r.followUps&&Object.keys(r.followUps).length>0){plain+=`## 후속 진행\n`;Object.keys(deptMap).forEach(key=>{if(r.followUps[key]&&r.followUps[key].length>0){plain+=`### ${deptMap[key].label}\n`;r.followUps[key].forEach(a=>{const task=a.task||(typeof a==='string'?a:'');const assignee=a.assignee?` (담당: ${a.assignee})`:'';plain+=`- ${task}${assignee}\n`;});}});plain+='\n';}
-  const ptDisc=(r.followUps?.discussion||[]).map(d=>d.task||(typeof d==='string'?d:''));const ptPend=r.pending||[];const allPend=[...ptDisc,...ptPend];
-  if(allPend.length)plain+=`## 논의 필요 / 미결\n${allPend.map(p=>'- '+p).join('\n')}\n\n`;
-  if(r.issues?.length)plain+=`## ${S.tpl==='plan'?'이슈/리스크 및 고려사항':'이슈/리스크'}\n${r.issues.map(i=>'- '+i).join('\n')}\n\n`;
-  if(etcStr)plain+=`## 기타\n${etcStr}\n`;
-
+  let plain=`# [${t?.label||'회의'}] ${title}\n날짜: ${dateTime} | 장소: ${r.location||'-'}\n`;if(r.milestones?.length)plain+=`마일스톤: ${r.milestones.join(', ')}\n`;plain+=`\n참석자:\n${formatAttendees(r.attendees,false)}\n`;if(r.links&&r.links.length>0)plain+=`\n참고 링크:\n${r.links.map(l=>'- '+l).join('\n')}\n`;plain+='\n';if(kpStr)plain+=`## 핵심 요약\n${kpStr}\n\n`;if(fsStr)plain+=`## 전체 내용 요약\n${fsStr}\n\n`;if(r.decisions?.length)plain+=`## 결정사항\n${r.decisions.map((d,i)=>`${i+1}. ${d}`).join('\n')}\n\n`;if(r.followUps&&Object.keys(r.followUps).length>0){plain+=`## 후속 진행\n`;Object.keys(deptMap).forEach(key=>{if(r.followUps[key]&&r.followUps[key].length>0){plain+=`### ${deptMap[key].label}\n`;r.followUps[key].forEach(a=>{const task=a.task||(typeof a==='string'?a:'');const assignee=a.assignee?` (담당: ${a.assignee})`:'';plain+=`- ${task}${assignee}\n`;});}});plain+='\n';}const ptDisc=(r.followUps?.discussion||[]).map(d=>d.task||(typeof d==='string'?d:''));const ptPend=r.pending||[];const allPend=[...ptDisc,...ptPend];if(allPend.length)plain+=`## 논의 필요 / 미결\n${allPend.map(p=>'- '+p).join('\n')}\n\n`;if(r.issues?.length)plain+=`## ${S.tpl==='plan'?'이슈/리스크 및 고려사항':'이슈/리스크'}\n${r.issues.map(i=>'- '+i).join('\n')}\n\n`;if(etcStr)plain+=`## 기타\n${etcStr}\n`;
   try{const ci=new ClipboardItem({'text/plain':new Blob([plain],{type:'text/plain'}),'text/html':new Blob([html],{type:'text/html'})});await navigator.clipboard.write([ci]);showToast('📋 Confluence 위키용 서식으로 복사되었습니다');}catch(err){navigator.clipboard.writeText(plain).then(()=>showToast('📋 텍스트로 복사되었습니다'));}
 }
-
 function markdownToConfluenceList(mdStr){const lines=mdStr.split('\n');let html='',inUl=false,inSubUl=false;lines.forEach(line=>{const trimmed=line.trimEnd();if(!trimmed)return;const isSubItem=/^[ ]{2,}- /.test(trimmed);const isItem=/^- /.test(trimmed);if(isSubItem){if(!inSubUl){if(!inUl){html+='<ul>';inUl=true;}html+='<ul>';inSubUl=true;}html+=`<li>${trimmed.replace(/^[ ]*- /,'').replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')}</li>`;}else if(isItem){if(inSubUl){html+='</ul>';inSubUl=false;}if(!inUl){html+='<ul>';inUl=true;}html+=`<li>${trimmed.replace(/^- /,'').replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')}</li>`;}else{if(inSubUl){html+='</ul>';inSubUl=false;}if(inUl){html+='</ul>';inUl=false;}html+=`<p>${trimmed.replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')}</p>`;}});if(inSubUl)html+='</ul>';if(inUl)html+='</ul>';return html;}
 
 function handleImage(e){if(e.target.files[0])processImg(e.target.files[0]);}
 async function processImg(file){}
-
 let tt;function showToast(m){clearTimeout(tt);let t=document.querySelector('.toast');if(t)t.remove();t=document.createElement('div');t.className='toast';t.textContent=m;document.body.appendChild(t);tt=setTimeout(()=>t.remove(),2500);}
-
 init();
 </script>
 </body>

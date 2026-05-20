@@ -73,10 +73,6 @@ body{font-family:'Noto Sans KR','DM Sans',sans-serif;background:var(--bg);color:
 .config-item-del:hover{background:rgba(217,69,69,0.1);color:var(--warn);}
 .ms-badge{padding:2px 7px;border-radius:4px;font-size:9px;font-weight:700;background:var(--accent-light);color:var(--accent);flex-shrink:0;}
 .config-count{font-size:10px;color:var(--text3);font-family:'JetBrains Mono',monospace;}
-.upload-row{display:flex;gap:6px;align-items:center;}
-.btn-upload-excel{padding:6px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text2);font-size:11px;font-weight:500;cursor:pointer;font-family:inherit;transition:all 0.15s;display:flex;align-items:center;gap:4px;}
-.btn-upload-excel:hover{border-color:var(--accent);color:var(--accent);}
-
 .main{flex:1;display:flex;flex-direction:column;overflow:hidden;}
 .topbar{padding:0 24px;height:54px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;background:var(--surface);flex-shrink:0;}
 .topbar-title{font-size:15px;font-weight:600;flex:1;}
@@ -85,12 +81,6 @@ body{font-family:'Noto Sans KR','DM Sans',sans-serif;background:var(--bg);color:
 .content{flex:1;display:flex;overflow:hidden;}
 
 .editor-panel{flex:1;display:flex;flex-direction:column;overflow:hidden;border-right:1px solid var(--border);}
-.editor-toolbar{padding:10px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;background:var(--surface);flex-shrink:0;flex-wrap:wrap;}
-.toolbar-label{font-size:12px;color:var(--text3);font-weight:500;}
-.template-chips{display:flex;gap:6px;flex-wrap:wrap;flex:1;}
-.chip{padding:5px 12px;border-radius:20px;border:1px solid var(--border);background:transparent;color:var(--text2);font-size:11px;font-weight:500;cursor:pointer;transition:all 0.15s;white-space:nowrap;}
-.chip:hover{border-color:var(--accent);color:var(--accent);}
-.chip.active{background:var(--accent-light);border-color:var(--accent);color:var(--accent);font-weight:600;}
 
 .meta-row{padding:10px 20px;border-bottom:1px solid var(--border);display:flex;gap:8px;flex-shrink:0;flex-wrap:wrap;background:var(--surface);}
 .meta-input{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:6px 10px;color:var(--text);font-size:12px;font-family:inherit;outline:none;transition:border-color 0.15s;}
@@ -247,28 +237,10 @@ body{font-family:'Noto Sans KR','DM Sans',sans-serif;background:var(--bg);color:
     </div>
     <div class="sidebar-tabs">
       <div class="sidebar-tab active" data-tab="meetings" onclick="switchTab('meetings')">회의록</div>
-      <div class="sidebar-tab" data-tab="dictionary" onclick="switchTab('dictionary')">명사집</div>
       <div class="sidebar-tab" data-tab="weeklyNotes" onclick="switchTab('weeklyNotes')">주간 메모</div>
     </div>
     <div class="sidebar-panel active" id="panelMeetings">
       <div class="meeting-list" id="meetingList"><div class="empty-list" id="emptyList">저장된 회의록이 없습니다</div></div>
-    </div>
-    <div class="sidebar-panel" id="panelDictionary">
-      <div class="config-panel">
-        <div style="display:flex;align-items:center;justify-content:space-between;"><div class="config-section-title">게임 고유 명사집</div><span class="config-count" id="dictCount">0개</span></div>
-        <div class="config-desc">캐릭터명, 스킬명, 던전명 등을 등록하면 AI가 정확하게 인식합니다.</div>
-        <div class="upload-row">
-          <button class="btn-upload-excel" onclick="document.getElementById('excelInput').click()">📎 엑셀 업로드</button>
-          <span style="font-size:10px;color:var(--text3);">.xlsx / .csv 지원</span>
-          <input type="file" id="excelInput" accept=".xlsx,.xls,.csv" style="display:none" onchange="handleExcelUpload(event)">
-        </div>
-        <div class="config-add-row">
-          <input class="config-input" id="dictName" placeholder="용어" style="min-width:0">
-          <input class="config-input" id="dictDesc" placeholder="설명" style="min-width:0">
-          <button class="btn-config" onclick="addDict()">추가</button>
-        </div>
-        <div class="config-list" id="dictList"></div>
-      </div>
     </div>
     <!-- ★ 주간 메모 패널 -->
     <div class="sidebar-panel" id="panelWeeklyNotes">
@@ -309,10 +281,6 @@ body{font-family:'Noto Sans KR','DM Sans',sans-serif;background:var(--bg);color:
     </div>
     <div class="content">
       <div class="editor-panel">
-        <div class="editor-toolbar">
-          <span class="toolbar-label">템플릿</span>
-          <div class="template-chips" id="templateChips"></div>
-        </div>
         <div class="meta-row">
           <input class="meta-input wide" id="mTitle" placeholder="회의 제목" style="flex-basis:100%;margin-bottom:4px;" oninput="updateTitle()">
           <div style="display:flex;gap:8px;flex-basis:100%;margin-top:4px;">
@@ -374,7 +342,6 @@ body{font-family:'Noto Sans KR','DM Sans',sans-serif;background:var(--bg);color:
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script>
 /* ═══ ACCESS CODE / AUTH ═══ */
 let ACCESS_CODE = null;
@@ -421,10 +388,6 @@ window.addEventListener('DOMContentLoaded', () => { const saved = localStorage.g
 
 const T=[
   {id:'general',label:'일반 회의',icon:'💬',tag:'tag-general',hint:'결정사항, 액션아이템, 담당자, 기한, 보류 사항 위주로 정리해주세요.'},
-  {id:'kickoff',label:'킥오프',icon:'🚀',tag:'tag-kickoff',hint:'프로젝트/스프린트 목표, 일정, 역할 분담, R&R, 주요 마일스톤, 리스크 위주로 정리해주세요.'},
-  {id:'plan',label:'기획 리뷰',icon:'📐',tag:'tag-plan',hint:'기획 결정사항, 보류사항, 고려 사항, 콘텐츠 수정 방향, 기획 완료 일정, 후속 논의 사항 위주로 정리해주세요.'},
-  {id:'dev',label:'개발 회의',icon:'⚙️',tag:'tag-dev',hint:'기술 결정사항, 구현 방향, 아키텍처 논의, 개발 마감 일정, 기술 부채, 담당자 위주로 정리해주세요.'},
-  {id:'qa',label:'QA 리뷰',icon:'🐛',tag:'tag-qa',hint:'버그 목록, 심각도, 재현 경로, 우선순위, 담당자, 해결 기한 위주로 정리해주세요.'},
 ];
 
 // 마일스톤 데이터 (로컬 저장 유지)
@@ -433,22 +396,13 @@ if(!localStorage.getItem('sg_ms_version_4')){
   localStorage.setItem('sg_ms_version_4','true');
 }
 
-let S={curId:null,tpl:'general',meetings:JSON.parse(localStorage.getItem('sg_meetings')||'[]'),dict:JSON.parse(localStorage.getItem('sg_dict')||'[]'),ms:JSON.parse(localStorage.getItem('sg_ms')||'[]'),result:null,uploadedImg:null};
+let S={curId:null,tpl:'general',meetings:JSON.parse(localStorage.getItem('sg_meetings')||'[]'),dict:[],ms:JSON.parse(localStorage.getItem('sg_ms')||'[]'),result:null,uploadedImg:null};
 
 function init(){
   document.getElementById('mDate').value=new Date().toISOString().split('T')[0];
-  const c=document.getElementById('templateChips');
-  T.forEach(t=>{const el=document.createElement('button');el.className='chip'+(t.id===S.tpl?' active':'');el.textContent=t.icon+' '+t.label;el.onclick=()=>selTpl(t.id);el.dataset.id=t.id;c.appendChild(el);});
-  renderList();renderDict();refreshMsSel();initWeeklyNotes();
+  renderList();refreshMsSel();initWeeklyNotes();
 }
-function selTpl(id){S.tpl=id;document.querySelectorAll('.chip').forEach(c=>c.classList.toggle('active',c.dataset.id===id));}
 function switchTab(t){document.querySelectorAll('.sidebar-tab').forEach(e=>e.classList.toggle('active',e.dataset.tab===t));document.querySelectorAll('.sidebar-panel').forEach(p=>p.classList.remove('active'));document.getElementById('panel'+t.charAt(0).toUpperCase()+t.slice(1)).classList.add('active');}
-
-function saveDict(){localStorage.setItem('sg_dict',JSON.stringify(S.dict));}
-function renderDict(){const l=document.getElementById('dictList');l.innerHTML='';document.getElementById('dictCount').textContent=S.dict.length+'개';S.dict.forEach((d,i)=>{const e=document.createElement('div');e.className='config-item';e.innerHTML=`<span class="config-item-name">${d.name}</span><span class="config-item-desc">${d.desc||''}</span><button class="config-item-del" onclick="delDict(${i})">✕</button>`;l.appendChild(e);});}
-function addDict(){const n=document.getElementById('dictName').value.trim(),d=document.getElementById('dictDesc').value.trim();if(!n){showToast('용어를 입력해주세요');return;}S.dict.push({name:n,desc:d});saveDict();renderDict();document.getElementById('dictName').value='';document.getElementById('dictDesc').value='';}
-function delDict(i){S.dict.splice(i,1);saveDict();renderDict();}
-function handleExcelUpload(e){const file=e.target.files[0];if(!file)return;const reader=new FileReader();reader.onload=function(ev){try{const wb=XLSX.read(ev.target.result,{type:'array'});const ws=wb.Sheets[wb.SheetNames[0]];const data=XLSX.utils.sheet_to_json(ws,{header:1});let added=0;const startRow=data[0]&&(typeof data[0][0]==='string')&&['용어','이름','name','term','명칭'].some(k=>data[0][0].toLowerCase().includes(k.toLowerCase()))?1:0;for(let i=startRow;i<data.length;i++){const row=data[i];if(!row||!row[0])continue;const name=String(row[0]).trim();const desc=row[1]?String(row[1]).trim():'';if(name&&!S.dict.some(d=>d.name===name)){S.dict.push({name,desc});added++;}}saveDict();renderDict();showToast(`📎 ${added}개 용어가 추가되었습니다`);}catch(err){showToast('❌ 파일 읽기 실패: '+err.message);}};reader.readAsArrayBuffer(file);e.target.value='';}
 
 // 마일스톤 (드롭다운 유지)
 function refreshMsSel(){const sel=document.getElementById('mMilestone');sel.innerHTML='<option value="">마일스톤 (선택)</option>';S.ms.forEach(m=>{const o=document.createElement('option');o.value=m.version;o.textContent=m.version+' — '+m.name;sel.appendChild(o);});}
@@ -587,9 +541,9 @@ async function deleteFromCloud(meetingId){
 }
 function renderList(){const l=document.getElementById('meetingList'),e=document.getElementById('emptyList'),ms=[...S.meetings].reverse();if(!ms.length){e.style.display='block';l.querySelectorAll('.meeting-item').forEach(x=>x.remove());return;}e.style.display='none';l.querySelectorAll('.meeting-item').forEach(x=>x.remove());ms.forEach(m=>{const t=T.find(t=>t.id===m.template)||T[0];const el=document.createElement('div');el.className='meeting-item'+(m.id===S.curId?' active':'');el.innerHTML=`<div class="meeting-item-title">${m.title||'제목 없음'}</div><div class="meeting-item-meta"><span>${m.date||''}</span><span class="meeting-tag ${t.tag}">${t.icon} ${t.label}</span></div>`;el.onclick=()=>loadMeeting(m.id);l.appendChild(el);});}
 
-function newMeeting(){S.curId=null;S.result=null;document.getElementById('mTitle').value='';document.getElementById('mDate').value=new Date().toISOString().split('T')[0];document.getElementById('mTime').value='';document.getElementById('mLocation').value='';document.getElementById('mAttPlanning').value='';document.getElementById('mAttDev').value='';document.getElementById('mAttMgmt').value='';document.getElementById('mAttAi').value='';document.getElementById('mLink1').value='';document.getElementById('mLink2').value='';document.getElementById('mLink3').value='';document.getElementById('mMilestone').value='';document.getElementById('rawInput').value='';document.getElementById('topbarTitle').textContent='새 회의록';selTpl('general');updateCount();showEmpty();renderList();}
+function newMeeting(){S.curId=null;S.result=null;document.getElementById('mTitle').value='';document.getElementById('mDate').value=new Date().toISOString().split('T')[0];document.getElementById('mTime').value='';document.getElementById('mLocation').value='';document.getElementById('mAttPlanning').value='';document.getElementById('mAttDev').value='';document.getElementById('mAttMgmt').value='';document.getElementById('mAttAi').value='';document.getElementById('mLink1').value='';document.getElementById('mLink2').value='';document.getElementById('mLink3').value='';document.getElementById('mMilestone').value='';document.getElementById('rawInput').value='';document.getElementById('topbarTitle').textContent='새 회의록';S.tpl='general';updateCount();showEmpty();renderList();}
 
-function loadMeeting(id){const m=S.meetings.find(x=>x.id===id);if(!m)return;S.curId=id;S.result=m.result;document.getElementById('mTitle').value=m.title||'';document.getElementById('mDate').value=m.date||'';document.getElementById('mTime').value=m.time||'';document.getElementById('mLocation').value=m.location||'';const atts=m.attendees||{};document.getElementById('mAttPlanning').value=atts.planning||'';document.getElementById('mAttDev').value=atts.dev||'';document.getElementById('mAttMgmt').value=atts.mgmt||'';document.getElementById('mAttAi').value=atts.ai||'';document.getElementById('mLink1').value=m.links&&m.links[0]?m.links[0]:'';document.getElementById('mLink2').value=m.links&&m.links[1]?m.links[1]:'';document.getElementById('mLink3').value=m.links&&m.links[2]?m.links[2]:'';document.getElementById('mMilestone').value=m.milestone||'';document.getElementById('rawInput').value=m.raw||'';document.getElementById('topbarTitle').textContent=m.title||'제목 없음';selTpl(m.template||'general');updateCount();if(m.result)renderResult(m.result);renderList();}
+function loadMeeting(id){const m=S.meetings.find(x=>x.id===id);if(!m)return;S.curId=id;S.result=m.result;document.getElementById('mTitle').value=m.title||'';document.getElementById('mDate').value=m.date||'';document.getElementById('mTime').value=m.time||'';document.getElementById('mLocation').value=m.location||'';const atts=m.attendees||{};document.getElementById('mAttPlanning').value=atts.planning||'';document.getElementById('mAttDev').value=atts.dev||'';document.getElementById('mAttMgmt').value=atts.mgmt||'';document.getElementById('mAttAi').value=atts.ai||'';document.getElementById('mLink1').value=m.links&&m.links[0]?m.links[0]:'';document.getElementById('mLink2').value=m.links&&m.links[1]?m.links[1]:'';document.getElementById('mLink3').value=m.links&&m.links[2]?m.links[2]:'';document.getElementById('mMilestone').value=m.milestone||'';document.getElementById('rawInput').value=m.raw||'';document.getElementById('topbarTitle').textContent=m.title||'제목 없음';S.tpl=m.template||'general';updateCount();if(m.result)renderResult(m.result);renderList();}
 
 function saveMeeting(){if(!S.result)return;const title=document.getElementById('mTitle').value.trim()||'제목 없음';const date=document.getElementById('mDate').value;const time=document.getElementById('mTime').value;const loc=document.getElementById('mLocation').value;const attendees={planning:document.getElementById('mAttPlanning').value.trim(),dev:document.getElementById('mAttDev').value.trim(),mgmt:document.getElementById('mAttMgmt').value.trim(),ai:document.getElementById('mAttAi').value.trim()};const l1=document.getElementById('mLink1').value.trim();const l2=document.getElementById('mLink2').value.trim();const l3=document.getElementById('mLink3').value.trim();const links=[l1,l2,l3].filter(Boolean);const ms=document.getElementById('mMilestone').value,raw=document.getElementById('rawInput').value.trim();let meeting;if(S.curId){const i=S.meetings.findIndex(m=>m.id===S.curId);if(i!==-1){S.meetings[i]={...S.meetings[i],title,date,time,location:loc,attendees,links,milestone:ms,raw,template:S.tpl,result:S.result};meeting=S.meetings[i];}}else{const id=Date.now().toString();S.curId=id;meeting={id,title,date,time,location:loc,attendees,links,milestone:ms,raw,template:S.tpl,result:S.result};S.meetings.push(meeting);}saveMeetings();renderList();document.getElementById('topbarTitle').textContent=title;syncToCloud(meeting);showToast('💾 저장되었습니다');}
 
@@ -605,7 +559,7 @@ async function generate(){
   const attendees={planning:document.getElementById('mAttPlanning').value.trim(),dev:document.getElementById('mAttDev').value.trim(),mgmt:document.getElementById('mAttMgmt').value.trim(),ai:document.getElementById('mAttAi').value.trim()};
   const l1=document.getElementById('mLink1').value.trim();const l2=document.getElementById('mLink2').value.trim();const l3=document.getElementById('mLink3').value.trim();const links=[l1,l2,l3].filter(Boolean);const ms=document.getElementById('mMilestone').value;
   document.getElementById('genBtn').disabled=true;document.getElementById('genBtn').textContent='생성 중...';document.getElementById('saveBtn').disabled=true;document.getElementById('statusDot').classList.remove('active');
-  document.getElementById('resultBody').innerHTML=`<div class="loading-state"><div class="spinner"></div><div class="loading-text">AI가 회의 내용 분석 중...</div><div class="loading-sub">명사집 ${S.dict.length}개 · 마일스톤 ${S.ms.length}개 참조</div></div>`;
+  document.getElementById('resultBody').innerHTML=`<div class="loading-state"><div class="spinner"></div><div class="loading-text">AI가 회의 내용 분석 중...</div><div class="loading-sub">마일스톤 ${S.ms.length}개 참조</div></div>`;
   try{
     const response=await fetch('/api/generate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({rawText:raw,template:S.tpl,dict:S.dict,milestones:S.ms,links:links})});
     const aiData=await response.json();if(!response.ok)throw new Error(aiData.error||'API 호출 실패');

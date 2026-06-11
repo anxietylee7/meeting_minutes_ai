@@ -565,7 +565,7 @@ async function generate(){
   document.getElementById('genBtn').disabled=true;document.getElementById('genBtn').textContent='생성 중...';document.getElementById('saveBtn').disabled=true;document.getElementById('statusDot').classList.remove('active');
   document.getElementById('resultBody').innerHTML=`<div class="loading-state"><div class="spinner"></div><div class="loading-text">AI가 회의 내용 분석 중...</div><div class="loading-sub">마일스톤 ${S.ms.length}개 참조</div></div>`;
   try{
-    const response=await fetch('/api/generate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({rawText:raw,template:S.tpl,dict:S.dict,milestones:S.ms,links:links})});
+    const response=await fetch('/api/generate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({rawText:raw,template:S.tpl,dict:S.dict,milestones:S.ms,links:links,attendees:attendees})});
     const aiData=await response.json();if(!response.ok)throw new Error(aiData.error||'API 호출 실패');
     S.result={...aiData,date,time,location:loc,attendees,links,template:S.tpl,raw};if(ms)S.result.milestones=[ms];
     renderResult(S.result);document.getElementById('statusDot').classList.add('active');document.getElementById('saveBtn').disabled=false;showToast('✦ 회의록이 생성되었습니다');

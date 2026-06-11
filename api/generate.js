@@ -3,7 +3,7 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method Not Allowed' });
   }
 
-  const { rawText, template, dict, milestones, links } = req.body;
+  const { rawText, template, dict, milestones, links, attendees } = req.body;
 
   // 명사집을 프롬프트에 포함할 문자열로 변환
   let dictPrompt = '';
@@ -12,6 +12,32 @@ export default async function handler(req, res) {
     dict.forEach(d => {
       dictPrompt += `- ${d.name}${d.desc ? ` (${d.desc})` : ''}\n`;
     });
+  }
+
+  // 참석 부서 정보 (followUps 분류 제한에 사용)
+  // attendees 키 → followUps 부서 키 매핑
+  const DEPT_MAP = {
+    planning: '기획실(planning)',
+    dev: '개발실(development)',
+    mgmt: '개발관리실(management)',
+    ai: 'AI센터(ai)',
+    graphic: '그래픽실(graphic)',
+  };
+  const presentDepts = [];
+  const absentDepts = [];
+  if (attendees && typeof attendees === 'object') {
+    for (const key of Object.keys(DEPT_MAP)) {
+      const v = (attendees[key] || '').trim();
+      if (v) presentDepts.push(DEPT_MAP[key]);
+      else absentDepts.push(DEPT_MAP[key]);
+    }
+  }
+  let attendeePrompt = '';
+  if (presentDepts.length > 0 || absentDepts.length > 0) {
+    attendeePrompt = `\n[이번 회의 참석 부서]\n`;
+    attendeePrompt += `참석한 부서: ${presentDepts.length > 0 ? presentDepts.join(', ') : '(없음)'}\n`;
+    attendeePrompt += `참석하지 않은 부서: ${absentDepts.length > 0 ? absentDepts.join(', ') : '(없음)'}\n`;
+    attendeePrompt += `★ 참석하지 않은 부서로는 followUps 작업을 절대 배정하지 말 것. (아래 "참석 부서 제한 규칙" 참조)\n`;
   }
 
   // 마일스톤 정보
@@ -42,7 +68,7 @@ export default async function handler(req, res) {
 
 [사용자가 선택한 회의 템플릿: ${template}]
 - 템플릿 성격에 맞춰 특정 항목을 중점적으로 요약할 것.
-${dictPrompt}${msPrompt}
+${dictPrompt}${attendeePrompt}${msPrompt}
 ══════════════════════════════════════
 입력 들여쓰기 기호 해석 규칙 (매우 중요)
 ══════════════════════════════════════
@@ -256,6 +282,27 @@ TA, 그래픽 작업, 화면 연출, 배경, 캐릭터, 비주얼,
 5단계: 위 어디에도 해당하지 않는 코드/서버/빌드/배포 작업 → 개발실
 
 ══════════════════════════════════════
+★★★ 참석 부서 제한 규칙 (followUps 배정 시 반드시 적용) ★★★
+══════════════════════════════════════
+
+위 [이번 회의 참석 부서] 정보를 참고하여, followUps(후속 진행)에는
+"참석한 부서"에만 작업을 배정한다.
+
+- 위의 분류 기준(AI센터/그래픽실/기획실/개발관리실/개발실)으로 어떤 작업의 담당 부서를 판단했더라도,
+  그 부서가 "참석하지 않은 부서"라면 → 해당 부서의 followUps 배열에 넣지 말 것.
+- 참석하지 않은 부서의 작업으로 판단된 내용은, 버리지 말고 "pending(논의 필요/미결)" 배열로 보낼 것.
+  이때 어느 부서 작업인지 맥락을 알 수 있게 간결히 적는다.
+  예: 그래픽실 미참석인데 그래픽 작업이 나옴 → pending에 "그래픽 관련: <작업 내용> (그래픽실 미참석, 별도 확인 필요)"
+- "참석 부서" 정보가 아예 제공되지 않은 경우(빈 정보)에는 이 제한을 적용하지 말고 기존대로 분류한다.
+- decisions, issues, keyPoints, fullSummary 등 followUps 외의 항목에는 이 제한을 적용하지 않는다.
+  (이 제한은 오직 followUps 부서별 배정에만 해당)
+
+예시:
+[이번 회의 참석 부서] 참석: 기획실, 개발실, AI센터 / 미참석: 개발관리실, 그래픽실
+→ 회의 중 "최적 이미지 선정용 이미지 분석 시도" (그래픽실 작업)이 나오면
+  followUps.graphic 에 넣지 말고, pending 에 "그래픽 관련: 최적 이미지 선정용 이미지 분석 시도 (그래픽실 미참석, 별도 확인 필요)" 로 보낼 것.
+
+══════════════════════════════════════
 핵심 요약 및 전체 요약 작성 규칙 (매우 중요 — 실제 예시 기반)
 ══════════════════════════════════════
 
@@ -353,6 +400,8 @@ ai: "선행 업무 처리 후 Lambda 펑션 제작 및 스키마 변경 작업"
 - 후속 진행의 "별도 논의 필요" 항목과 겹치지 않도록 할 것
 - 정말 미정이거나 결론 없이 끝난 사항만 넣을 것
 - 후속 진행에서 이미 커버된 논의 사항은 pending에 넣지 말 것
+- "참석 부서 제한 규칙"에 따라, 미참석 부서의 작업으로 판단된 내용도 여기에 넣는다
+  (예: "그래픽 관련: <내용> (그래픽실 미참석, 별도 확인 필요)")
 
 ■ issues (이슈/리스크) 작성 규칙:
 - 전체 요약 안에서 이미 언급된 이슈(딜레이 등)를 별도로 또 나열하지 말 것

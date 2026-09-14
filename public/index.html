@@ -191,6 +191,10 @@ body{font-family:'Noto Sans KR','DM Sans',sans-serif;background:var(--bg);color:
 .fu-add{margin-top:2px;padding:3px 10px;border:1px dashed var(--border);background:transparent;border-radius:5px;font-size:11px;color:var(--text3);cursor:pointer;font-family:inherit;}
 .fu-add:hover{border-color:var(--accent);color:var(--accent);}
 .fu-hint{font-size:11px;color:var(--text3);margin-bottom:8px;}
+/* 결정사항 & 후속 진행 통합 섹션 */
+.dc-label{font-size:11px;font-weight:700;color:var(--text2);margin-bottom:4px;letter-spacing:0.3px;}
+.dc-divider{border:none;border-top:1px solid var(--border);margin:12px 0;}
+.fu-tag{display:inline-block;padding:0 6px;margin-right:4px;border:1px solid;border-radius:4px;font-size:10px;font-weight:700;vertical-align:1px;}
 
 .auth-screen{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:999;}
 .auth-card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:40px 36px;width:380px;text-align:center;}
@@ -447,6 +451,8 @@ const FU_DEPTS=[
 ];
 // input value 속성에 안전하게 넣기 위한 이스케이프
 function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+// **텍스트** → <strong>텍스트</strong> (후속 진행·결정사항 등은 마크다운 파서를 거치지 않으므로 직접 변환)
+function mdBold(s){return String(s==null?'':s).replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>');}
 function fuList(key){
   if(!S.result)return null;
   if(!S.result.followUps)S.result.followUps={};
@@ -644,7 +650,7 @@ function renderList(){const l=document.getElementById('meetingList'),e=document.
 
 function newMeeting(){S.curId=null;S.result=null;S.fuEdit=false;S.fuUndo=null;document.getElementById('mTitle').value='';document.getElementById('mDate').value=new Date().toISOString().split('T')[0];document.getElementById('mTime').value='';document.getElementById('mLocation').value='';document.getElementById('mAttPlanning').value='';document.getElementById('mAttDev').value='';document.getElementById('mAttMgmt').value='';document.getElementById('mAttAi').value='';document.getElementById('mAttGraphic').value='';document.getElementById('mAttEtc').value='';document.getElementById('mLink1').value='';document.getElementById('mLink2').value='';document.getElementById('mLink3').value='';document.getElementById('mMilestone').value='';document.getElementById('rawInput').value='';document.getElementById('topbarTitle').textContent='새 회의록';S.tpl='general';updateCount();showEmpty();renderList();}
 
-function loadMeeting(id){const m=S.meetings.find(x=>x.id===id);if(!m)return;S.curId=id;S.result=m.result;S.fuEdit=false;S.fuUndo=null;document.getElementById('mTitle').value=m.title||'';document.getElementById('mDate').value=m.date||'';document.getElementById('mTime').value=m.time||'';document.getElementById('mLocation').value=m.location||'';const atts=m.attendees||{};document.getElementById('mAttPlanning').value=atts.planning||'';document.getElementById('mAttDev').value=atts.dev||'';document.getElementById('mAttMgmt').value=atts.mgmt||'';document.getElementById('mAttAi').value=atts.ai||'';document.getElementById('mAttGraphic').value=atts.graphic||'';document.getElementById('mAttEtc').value=atts.etc||'';document.getElementById('mLink1').value=m.links&&m.links[0]?m.links[0]:'';document.getElementById('mLink2').value=m.links&&m.links[1]?m.links[1]:'';document.getElementById('mLink3').value=m.links&&m.links[2]?m.links[2]:'';document.getElementById('mMilestone').value=m.milestone||'';document.getElementById('rawInput').value=m.raw||'';document.getElementById('topbarTitle').textContent=m.title||'제목 없음';S.tpl=m.template||'general';updateCount();if(m.result)renderResult(m.result);renderList();}
+function loadMeeting(id){const m=S.meetings.find(x=>x.id===id);if(!m)return;S.curId=id;S.result=m.result;S.fuEdit=false;S.fuUndo=null;document.getElementById('mTitle').value=m.title||'';document.getElementById('mDate').value=m.date||'';document.getElementById('mTime').value=m.time||'';document.getElementById('mLocation').value=m.location||'';const atts=m.attendees||{};document.getElementById('mAttPlanning').value=atts.planning||'';document.getElementById('mAttDev').value=atts.dev||'';document.getElementById('mAttMgmt').value=atts.mgmt||'';document.getElementById('mAttAi').value=atts.ai||'';document.getElementById('mAttGraphic').value=atts.graphic||'';document.getElementById('mAttEtc').value=atts.etc||'';document.getElementById('mLink1').value=m.links&&m.links[0]?m.links[0]:'';document.getElementById('mLink2').value=m.links&&m.links[1]?m.links[1]:'';document.getElementById('mLink3').value=m.links&&m.links[2]?m.links[2]:'';document.getElementById('mMilestone').value=m.milestone||'';document.getElementById('rawInput').value=m.raw||'';document.getElementById('transcriptInput').value=m.transcript||'';document.getElementById('topbarTitle').textContent=m.title||'제목 없음';S.tpl=m.template||'general';updateCount();if(m.result)renderResult(m.result);renderList();}
 
 function saveMeeting(){if(!S.result)return;fuPrune();const title=document.getElementById('mTitle').value.trim()||'제목 없음';const date=document.getElementById('mDate').value;const time=document.getElementById('mTime').value;const loc=document.getElementById('mLocation').value;const attendees={planning:document.getElementById('mAttPlanning').value.trim(),dev:document.getElementById('mAttDev').value.trim(),mgmt:document.getElementById('mAttMgmt').value.trim(),ai:document.getElementById('mAttAi').value.trim(),graphic:document.getElementById('mAttGraphic').value.trim(),etc:document.getElementById('mAttEtc').value.trim()};const l1=document.getElementById('mLink1').value.trim();const l2=document.getElementById('mLink2').value.trim();const l3=document.getElementById('mLink3').value.trim();const links=[l1,l2,l3].filter(Boolean);const ms=document.getElementById('mMilestone').value,raw=document.getElementById('rawInput').value.trim(),transcript=document.getElementById('transcriptInput').value.trim();let meeting;if(S.curId){const i=S.meetings.findIndex(m=>m.id===S.curId);if(i!==-1){S.meetings[i]={...S.meetings[i],title,date,time,location:loc,attendees,links,milestone:ms,raw,transcript,template:S.tpl,result:S.result};meeting=S.meetings[i];}}else{const id=Date.now().toString();S.curId=id;meeting={id,title,date,time,location:loc,attendees,links,milestone:ms,raw,transcript,template:S.tpl,result:S.result};S.meetings.push(meeting);}saveMeetings();renderList();document.getElementById('topbarTitle').textContent=title;syncToCloud(meeting);showToast('💾 저장되었습니다');}
 
@@ -704,7 +710,7 @@ async function generate(){
   document.getElementById('genBtn').disabled=true;document.getElementById('genBtn').textContent='생성 중...';document.getElementById('saveBtn').disabled=true;document.getElementById('statusDot').classList.remove('active');
   document.getElementById('resultBody').innerHTML=`<div class="loading-state"><div class="spinner"></div><div class="loading-text">AI가 회의 내용 분석 중...</div><div class="loading-sub">마일스톤 ${S.ms.length}개 참조</div></div>`;
   try{
-    const response=await fetch('/api/generate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({rawText:raw,transcript:transcript,template:S.tpl,dict:S.dict,milestones:S.ms,links:links,attendees:attendees})});
+    const response=await fetch('/api/generate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({rawText:raw,transcript:transcript,title:document.getElementById('mTitle').value.trim(),template:S.tpl,dict:S.dict,milestones:S.ms,links:links,attendees:attendees})});
     const aiData=await response.json();if(!response.ok)throw new Error(aiData.error||'API 호출 실패');
     S.fuEdit=false;S.fuUndo=null;S.result={...aiData,date,time,location:loc,attendees,links,template:S.tpl,raw,transcript};if(ms)S.result.milestones=[ms];
     renderResult(S.result);document.getElementById('statusDot').classList.add('active');document.getElementById('saveBtn').disabled=false;showToast('✦ 회의록이 생성되었습니다');
@@ -743,41 +749,53 @@ function renderResult(r){
   const kpStr=cleanMarkdownList(r.keyPoints,true);const fsStr=cleanMarkdownList(r.fullSummary,true);const etcStr=cleanMarkdownList(r.etc);
   if(kpStr)h+=`<div class="result-section"><div class="result-section-title">💡 핵심 요약</div><div class="summary-box">${marked.parse(kpStr)}</div></div>`;
   if(fsStr)h+=`<div class="result-section"><div class="result-section-title">📝 전체 내용 요약</div><div class="summary-box">${marked.parse(fsStr)}</div></div>`;
-  if(r.decisions?.length){h+=`<div class="result-section"><div class="result-section-title">✅ 결정사항</div><div class="summary-box"><ul>`;r.decisions.forEach(d=>h+=`<li>${d}</li>`);h+=`</ul></div></div>`;}
-  if(r.followUps&&Object.keys(r.followUps).length>0){
+  // ── 결정사항 + 후속 진행 통합 섹션 ──
+  {
     const ed=S.fuEdit===true;
-    h+=`<div class="result-section"><div style="display:flex;align-items:center;gap:10px;"><div class="result-section-title" style="flex:1;min-width:0;">🎯 후속 진행</div>${ed&&S.fuUndo?`<button class="fu-undo" onclick="fuUndo()">↩ 삭제 되돌리기</button>`:''}<button class="fu-edit-btn${ed?' on':''}" onclick="toggleFuEdit()" style="flex-shrink:0;">${ed?'✓ 완료':'✏️ 수정'}</button></div>`;
-    if(ed)h+=`<div class="fu-hint">부서를 바꾸면 해당 부서로 이동합니다. 수정 후 아래 <strong>저장</strong> 버튼을 눌러주세요.</div>`;
-    if(r.followUps._deadline)h+=`<div style="padding:8px 12px;background:var(--accent-light);border-radius:var(--radius-sm);border:1px solid rgba(224,107,32,0.2);font-size:13px;font-weight:600;color:var(--accent);margin-bottom:8px;">📅 ${r.followUps._deadline}</div>`;
-    FU_DEPTS.forEach(dept=>{
-      const items=r.followUps[dept.key];
-      // 수정 모드에서는 비어 있는 부서도 노출해야 항목을 옮겨 담을 수 있다
-      if(!ed&&(!items||items.length===0))return;
-      h+=`<div class="dept-group"><div class="dept-group-label" style="color:${dept.color};">${dept.label}</div><div class="dept-group-box">`;
-      if(ed){
-        (items||[]).forEach((a,i)=>{
-          const task=a.task||(typeof a==='string'?a:'');const assignee=a.assignee||'';
-          h+=`<div class="fu-row">`;
-          h+=`<select class="fu-sel" onchange="fuMove('${dept.key}',${i},this.value)">`;
-          FU_DEPTS.forEach(d=>{h+=`<option value="${d.key}"${d.key===dept.key?' selected':''}>${d.label}</option>`;});
-          h+=`</select>`;
-          h+=`<input class="fu-task" value="${esc(task)}" placeholder="할 일" onchange="fuSet('${dept.key}',${i},'task',this.value)">`;
-          h+=`<input class="fu-assignee" value="${esc(assignee)}" placeholder="담당자" onchange="fuSet('${dept.key}',${i},'assignee',this.value)">`;
-          h+=`<button class="fu-del" onclick="fuDel('${dept.key}',${i})" title="이 항목 삭제">삭제</button>`;
-          h+=`</div>`;
-        });
-        h+=`<button class="fu-add" onclick="fuAdd('${dept.key}')">+ 항목 추가</button>`;
-      }else{
-        h+=`<ul>`;
-        items.forEach(a=>{const task=a.task||(typeof a==='string'?a:'');const assignee=a.assignee||'';h+=`<li>${task}${assignee?' <span style="font-size:10px;font-weight:600;color:'+dept.color+';">('+assignee+')</span>':''}</li>`;});
+    const hasDec=!!(r.decisions&&r.decisions.length);
+    // 부서 구분 없이 전체 후속 항목을 한 묶음으로 모은다 (부서는 각 항목의 태그로만 표시)
+    const flat=[];
+    FU_DEPTS.forEach(dept=>{(r.followUps&&r.followUps[dept.key]||[]).forEach((a,i)=>flat.push({dept,i,a}));});
+    if(hasDec||flat.length>0||ed){
+      h+=`<div class="result-section"><div style="display:flex;align-items:center;gap:10px;"><div class="result-section-title" style="flex:1;min-width:0;">✅ 결정사항 &amp; 후속 진행</div>${ed&&S.fuUndo?`<button class="fu-undo" onclick="fuUndo()">↩ 삭제 되돌리기</button>`:''}<button class="fu-edit-btn${ed?' on':''}" onclick="toggleFuEdit()" style="flex-shrink:0;">${ed?'✓ 완료':'✏️ 수정'}</button></div>`;
+      if(ed)h+=`<div class="fu-hint">드롭다운에서 담당 조직을 지정할 수 있습니다. 수정 후 아래 <strong>저장</strong> 버튼을 눌러주세요.</div>`;
+      h+=`<div class="summary-box">`;
+      if(hasDec){
+        h+=`<div class="dc-label">결정사항</div><ul>`;
+        r.decisions.forEach(d=>h+=`<li>${mdBold(d)}</li>`);
         h+=`</ul>`;
       }
+      if(r.followUps&&r.followUps._deadline)h+=`<div style="padding:6px 10px;background:var(--accent-light);border-radius:var(--radius-sm);border:1px solid rgba(224,107,32,0.2);font-size:12px;font-weight:600;color:var(--accent);margin:8px 0;">📅 ${r.followUps._deadline}</div>`;
+      if(flat.length>0||ed){
+        if(hasDec)h+=`<hr class="dc-divider">`;
+        h+=`<div class="dc-label">후속 진행</div>`;
+        if(ed){
+          flat.forEach(({dept,i,a})=>{
+            const task=a.task||(typeof a==='string'?a:'');const assignee=a.assignee||'';
+            h+=`<div class="fu-row">`;
+            h+=`<select class="fu-sel" onchange="fuMove('${dept.key}',${i},this.value)">`;
+            FU_DEPTS.forEach(d=>{h+=`<option value="${d.key}"${d.key===dept.key?' selected':''}>${d.label}</option>`;});
+            h+=`</select>`;
+            h+=`<input class="fu-task" value="${esc(task)}" placeholder="할 일" onchange="fuSet('${dept.key}',${i},'task',this.value)">`;
+            h+=`<input class="fu-assignee" value="${esc(assignee)}" placeholder="담당자" onchange="fuSet('${dept.key}',${i},'assignee',this.value)">`;
+            h+=`<button class="fu-del" onclick="fuDel('${dept.key}',${i})" title="이 항목 삭제">삭제</button>`;
+            h+=`</div>`;
+          });
+          h+=`<button class="fu-add" onclick="fuAdd('${FU_DEPTS[0].key}')">+ 항목 추가</button>`;
+        }else{
+          h+=`<ul>`;
+          flat.forEach(({dept,a})=>{
+            const task=a.task||(typeof a==='string'?a:'');const assignee=a.assignee||'';
+            h+=`<li><span class="fu-tag" style="color:${dept.color};border-color:${dept.color}55;">${dept.label}</span> ${mdBold(task)}${assignee?` <span style="font-size:10px;font-weight:600;color:${dept.color};">(${assignee})</span>`:''}</li>`;
+          });
+          h+=`</ul>`;
+        }
+      }
       h+=`</div></div>`;
-    });
-    h+='</div>';
+    }
   }
   // 논의 필요/미결 섹션은 후속 진행과 중복되므로 표시하지 않음
-  if(r.issues?.length){const issueTitle=S.tpl==='plan'?'⚠️ 이슈/리스크 및 고려사항':'⚠️ 이슈/리스크';h+=`<div class="result-section"><div class="result-section-title">${issueTitle}</div><div class="summary-box"><ul>`;r.issues.forEach(i=>h+=`<li>${i}</li>`);h+=`</ul></div></div>`;}
+  if(r.issues?.length){const issueTitle=S.tpl==='plan'?'⚠️ 이슈/리스크 및 고려사항':'⚠️ 이슈/리스크';h+=`<div class="result-section"><div class="result-section-title">${issueTitle}</div><div class="summary-box"><ul>`;r.issues.forEach(i=>h+=`<li>${mdBold(i)}</li>`);h+=`</ul></div></div>`;}
   if(etcStr)h+=`<div class="result-section"><div class="result-section-title">💬 기타</div><div class="summary-box">${etcStr.replace(/\n/g,'<br>')}</div></div>`;
   h+='</div>';document.getElementById('resultBody').innerHTML=h;
 }
@@ -795,40 +813,42 @@ async function copyResult(){
   if(atts.graphic)attParts.push(`<strong>그래픽실</strong> ${atts.graphic}`);
   if(atts.etc)attParts.push(atts.etc);
   const attRows=attParts.length>0;
-  const attCell=attParts.join('<br>');
+  const attCell=attParts.length>0?`<ul>${attParts.map(x=>`<li><p>${x}</p></li>`).join('')}</ul>`:'';
   const deptMap={planning:{label:'기획실',color:'#6B42B4',bg:'#f3eef9'},development:{label:'개발실',color:'#2A78BE',bg:'#edf4fb'},management:{label:'개발관리실',color:'#C85A18',bg:'#fdf0e8'},ai:{label:'AI센터',color:'#2A9E6F',bg:'#ecf8f3'},graphic:{label:'그래픽실',color:'#D946A8',bg:'#fbe9f3'}};
   let html=`<h1>${t?.icon||''} [${t?.label||'회의'}] ${title}</h1>`;
-  html+=`<table><tbody><tr><td><strong>날짜/시간</strong></td><td>${dateTime}</td></tr><tr><td><strong>장소</strong></td><td>${r.location||'-'}</td></tr>${attRows?`<tr><td><strong>참석자</strong></td><td>${attCell}</td></tr>`:''}</tbody></table>`;
+  html+=`<p>📅 <strong>일정</strong>&nbsp;&nbsp;${dateTime}</p>`;
+  html+=`<p>📍 <strong>장소</strong>&nbsp;&nbsp;${r.location||'-'}</p>`;
+  if(attRows)html+=`<p>👥 <strong>참석자</strong></p>${attCell}`;
   if(r.links&&r.links.length>0){html+=`<h2>🔗 참고 링크</h2><ul>`;r.links.forEach(l=>html+=`<li><a href="${l}">${l}</a></li>`);html+=`</ul>`;}
   if(kpStr)html+=`<h2>💡 핵심 요약</h2>${markdownToConfluenceList(kpStr)}`;
   if(fsStr)html+=`<h2>📝 전체 내용 요약</h2>${markdownToConfluenceList(fsStr)}`;
-  if(r.decisions?.length){html+=`<h2>✅ 결정사항</h2><ol>`;r.decisions.forEach(d=>html+=`<li><p>${d}</p></li>`);html+=`</ol>`;}
-  if(r.followUps&&Object.keys(r.followUps).length>0){
-    // 도표 대신 부서별 제목 + 목록 형태
-    let fuBlocks='';
+  // ── 결정사항 + 후속 진행 통합 (구분선으로만 분리, 부서별 그룹핑 없음) ──
+  {
+    const hasDec=!!(r.decisions&&r.decisions.length);
+    let fuLis='';
     Object.keys(deptMap).forEach(key=>{
-      const items=r.followUps[key];
-      if(!items||items.length===0)return;
-      let lis='';
-      items.forEach(a=>{
+      (r.followUps&&r.followUps[key]||[]).forEach(a=>{
         const task=a.task||(typeof a==='string'?a:'');
         if(!String(task).trim())return;
         const assignee=a.assignee||'';
-        lis+=`<li><p>${task}${assignee?` <em>(${assignee})</em>`:''}</p></li>`;
+        fuLis+=`<li><p><strong>[${deptMap[key].label}]</strong> ${mdBold(task)}${assignee?` <em>(${assignee})</em>`:''}</p></li>`;
       });
-      if(lis)fuBlocks+=`<h3>${deptMap[key].label}</h3><ul>${lis}</ul>`;
     });
-    if(fuBlocks){
-      html+=`<h2>🎯 후속 진행</h2>`;
-      if(r.followUps._deadline)html+=`<p><strong>📅 ${r.followUps._deadline}</strong></p>`;
-      html+=fuBlocks;
+    if(hasDec||fuLis){
+      html+=`<h2>✅ 결정사항 &amp; 후속 진행</h2>`;
+      if(hasDec){html+=`<p><strong>결정사항</strong></p><ol>`;r.decisions.forEach(d=>html+=`<li><p>${mdBold(d)}</p></li>`);html+=`</ol>`;}
+      if(r.followUps&&r.followUps._deadline)html+=`<p><strong>📅 ${r.followUps._deadline}</strong></p>`;
+      if(fuLis){
+        if(hasDec)html+=`<hr>`;
+        html+=`<p><strong>후속 진행</strong></p><ul>${fuLis}</ul>`;
+      }
     }
   }
   // 논의 필요/미결 섹션은 후속 진행과 중복되므로 출력하지 않음
-  if(r.issues?.length){const il=S.tpl==='plan'?'이슈/리스크 및 고려사항':'이슈/리스크';html+=`<h2>⚠️ ${il}</h2><ul>`;r.issues.forEach(i=>html+=`<li><p>${i}</p></li>`);html+=`</ul>`;}
+  if(r.issues?.length){const il=S.tpl==='plan'?'이슈/리스크 및 고려사항':'이슈/리스크';html+=`<h2>⚠️ ${il}</h2><ul>`;r.issues.forEach(i=>html+=`<li><p>${mdBold(i)}</p></li>`);html+=`</ul>`;}
   if(etcStr)html+=`<h2>💬 기타</h2><p>${etcStr.replace(/\n/g,'<br>')}</p>`;
   html+=`<hr><p><em>Generated by SMILEGATE MEETING AI · ${new Date().toLocaleDateString('ko-KR')}</em></p>`;
-  let plain=`# [${t?.label||'회의'}] ${title}\n날짜: ${dateTime} | 장소: ${r.location||'-'}\n`;plain+=`\n참석자:\n${formatAttendees(r.attendees,false)}\n`;if(r.links&&r.links.length>0)plain+=`\n참고 링크:\n${r.links.map(l=>'- '+l).join('\n')}\n`;plain+='\n';if(kpStr)plain+=`## 핵심 요약\n${kpStr}\n\n`;if(fsStr)plain+=`## 전체 내용 요약\n${fsStr}\n\n`;if(r.decisions?.length)plain+=`## 결정사항\n${r.decisions.map((d,i)=>`${i+1}. ${d}`).join('\n')}\n\n`;if(r.followUps&&Object.keys(r.followUps).length>0){plain+=`## 후속 진행\n`;Object.keys(deptMap).forEach(key=>{if(r.followUps[key]&&r.followUps[key].length>0){plain+=`### ${deptMap[key].label}\n`;r.followUps[key].forEach(a=>{const task=a.task||(typeof a==='string'?a:'');const assignee=a.assignee?` (담당: ${a.assignee})`:'';plain+=`- ${task}${assignee}\n`;});}});plain+='\n';}if(r.issues?.length)plain+=`## ${S.tpl==='plan'?'이슈/리스크 및 고려사항':'이슈/리스크'}\n${r.issues.map(i=>'- '+i).join('\n')}\n\n`;if(etcStr)plain+=`## 기타\n${etcStr}\n`;
+  let plain=`# [${t?.label||'회의'}] ${title}\n날짜: ${dateTime} | 장소: ${r.location||'-'}\n`;plain+=`\n참석자:\n${formatAttendees(r.attendees,false)}\n`;if(r.links&&r.links.length>0)plain+=`\n참고 링크:\n${r.links.map(l=>'- '+l).join('\n')}\n`;plain+='\n';if(kpStr)plain+=`## 핵심 요약\n${kpStr}\n\n`;if(fsStr)plain+=`## 전체 내용 요약\n${fsStr}\n\n`;if(r.decisions?.length||r.followUps){plain+=`## 결정사항 & 후속 진행\n`;if(r.decisions?.length)plain+=`[결정사항]\n${r.decisions.map((d,i)=>`${i+1}. ${d}`).join('\n')}\n\n`;let ptFu='';Object.keys(deptMap).forEach(key=>{(r.followUps&&r.followUps[key]||[]).forEach(a=>{const task=a.task||(typeof a==='string'?a:'');if(!String(task).trim())return;const assignee=a.assignee?` (담당: ${a.assignee})`:'';ptFu+=`- [${deptMap[key].label}] ${task}${assignee}\n`;});});if(ptFu)plain+=`[후속 진행]\n${ptFu}`;plain+='\n';}if(r.issues?.length)plain+=`## ${S.tpl==='plan'?'이슈/리스크 및 고려사항':'이슈/리스크'}\n${r.issues.map(i=>'- '+i).join('\n')}\n\n`;if(etcStr)plain+=`## 기타\n${etcStr}\n`;
   try{const ci=new ClipboardItem({'text/plain':new Blob([plain],{type:'text/plain'}),'text/html':new Blob([html],{type:'text/html'})});await navigator.clipboard.write([ci]);showToast('📋 Confluence 위키용 서식으로 복사되었습니다');}catch(err){navigator.clipboard.writeText(plain).then(()=>showToast('📋 텍스트로 복사되었습니다'));}
 }
 // 마크다운 불릿 → Confluence용 중첩 리스트

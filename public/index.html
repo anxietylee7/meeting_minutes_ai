@@ -127,7 +127,6 @@ body{font-family:'Noto Sans KR','DM Sans',sans-serif;background:var(--bg);color:
 .result-meta-item{display:flex;flex-direction:column;gap:2px;}
 .result-meta-label{font-size:10px;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:0.5px;}
 .result-meta-value{font-size:12px;font-weight:500;word-break:break-all;}
-.result-ms-tag{display:inline-flex;align-items:center;gap:4px;padding:4px 12px;background:var(--accent-light);border:1px solid rgba(224,107,32,0.2);border-radius:20px;font-size:11px;font-weight:600;color:var(--accent);}
 .result-section{display:flex;flex-direction:column;gap:6px;}
 .result-section-title{font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.8px;display:flex;align-items:center;gap:6px;}
 .result-section-title::after{content:'';flex:1;height:1px;background:var(--border);}
@@ -696,8 +695,7 @@ function cleanMarkdownList(val,enforceList=false){
 function renderResult(r){
   const tpl=T.find(t=>t.id===r.template);let h='<div class="result-content">';
   const dateTime=(r.date||'-')+(r.time?' '+r.time:'');
-  h+=`<div class="result-meta"><div class="result-meta-item"><div class="result-meta-label">날짜/시간</div><div class="result-meta-value">${dateTime}</div></div><div class="result-meta-item"><div class="result-meta-label">장소</div><div class="result-meta-value">${r.location||'-'}</div></div><div class="result-meta-item"><div class="result-meta-label">유형</div><div class="result-meta-value">${tpl?.label||'-'}</div></div><div class="result-meta-item" style="flex-basis:100%;margin-top:4px;"><div class="result-meta-label">참석자</div><div class="result-meta-value">${formatAttendees(r.attendees,true)}</div></div>${r.links&&r.links.length>0?`<div class="result-meta-item" style="flex-basis:100%;margin-top:4px;"><div class="result-meta-label">참고 링크</div><div class="result-meta-value">${r.links.map(l=>`<a href="${l}" target="_blank" style="color:var(--accent);margin-right:12px;word-break:break-all;">${l}</a>`).join('')}</div></div>`:''}</div>`;
-  if(r.milestones?.length){h+='<div style="display:flex;gap:6px;flex-wrap:wrap;">';r.milestones.forEach(ms=>{const f=S.ms.find(m=>m.version===ms);h+=`<span class="result-ms-tag">🏷️ ${ms}${f?' — '+f.name:''}</span>`;});h+='</div>';}
+  h+=`<div class="result-meta"><div class="result-meta-item"><div class="result-meta-label">날짜/시간</div><div class="result-meta-value">${dateTime}</div></div><div class="result-meta-item"><div class="result-meta-label">장소</div><div class="result-meta-value">${r.location||'-'}</div></div><div class="result-meta-item" style="flex-basis:100%;margin-top:4px;"><div class="result-meta-label">참석자</div><div class="result-meta-value">${formatAttendees(r.attendees,true)}</div></div>${r.links&&r.links.length>0?`<div class="result-meta-item" style="flex-basis:100%;margin-top:4px;"><div class="result-meta-label">참고 링크</div><div class="result-meta-value">${r.links.map(l=>`<a href="${l}" target="_blank" style="color:var(--accent);margin-right:12px;word-break:break-all;">${l}</a>`).join('')}</div></div>`:''}</div>`;
   const kpStr=cleanMarkdownList(r.keyPoints,true);const fsStr=cleanMarkdownList(r.fullSummary,true);const etcStr=cleanMarkdownList(r.etc);
   if(kpStr)h+=`<div class="result-section"><div class="result-section-title">💡 핵심 요약</div><div class="summary-box">${marked.parse(kpStr)}</div></div>`;
   if(fsStr)h+=`<div class="result-section"><div class="result-section-title">📝 전체 내용 요약</div><div class="summary-box">${marked.parse(fsStr)}</div></div>`;
@@ -718,7 +716,6 @@ function renderResult(r){
           h+=`<div class="fu-row">`;
           h+=`<select class="fu-sel" onchange="fuMove('${dept.key}',${i},this.value)">`;
           FU_DEPTS.forEach(d=>{h+=`<option value="${d.key}"${d.key===dept.key?' selected':''}>${d.label}</option>`;});
-          h+=`<option value="discussion"${dept.key==='discussion'?' selected':''}>논의 필요</option>`;
           h+=`</select>`;
           h+=`<input class="fu-task" value="${esc(task)}" placeholder="할 일" onchange="fuSet('${dept.key}',${i},'task',this.value)">`;
           h+=`<input class="fu-assignee" value="${esc(assignee)}" placeholder="담당자" onchange="fuSet('${dept.key}',${i},'assignee',this.value)">`;
@@ -735,32 +732,7 @@ function renderResult(r){
     });
     h+='</div>';
   }
-  const disc=r.followUps?.discussion||[];const pend=r.pending||[];
-  if(disc.length>0||pend.length>0){
-    const ed=S.fuEdit===true;
-    h+=`<div class="result-section"><div class="result-section-title">⏳ 논의 필요 / 미결</div><div class="summary-box">`;
-    if(ed&&disc.length>0){
-      // 수정 모드: 논의 필요 항목을 부서로 되돌릴 수 있게 드롭다운 제공
-      disc.forEach((d,i)=>{
-        const txt=d.task||(typeof d==='string'?d:'');
-        h+=`<div class="fu-row">`;
-        h+=`<select class="fu-sel" onchange="fuMove('discussion',${i},this.value)">`;
-        h+=`<option value="discussion" selected>논의 필요</option>`;
-        FU_DEPTS.forEach(dd=>{h+=`<option value="${dd.key}">${dd.label}</option>`;});
-        h+=`</select>`;
-        h+=`<input class="fu-task" value="${esc(txt)}" placeholder="내용" onchange="fuSet('discussion',${i},'task',this.value)">`;
-        h+=`<button class="fu-del" onclick="fuDel('discussion',${i})" title="이 항목 삭제">삭제</button>`;
-        h+=`</div>`;
-      });
-      if(pend.length>0){h+=`<ul style="margin-top:6px;">`;pend.forEach(p=>h+=`<li>${p}</li>`);h+=`</ul>`;}
-    }else{
-      h+=`<ul>`;
-      disc.forEach(d=>{const txt=d.task||(typeof d==='string'?d:'');h+=`<li>${txt}</li>`;});
-      pend.forEach(p=>h+=`<li>${p}</li>`);
-      h+=`</ul>`;
-    }
-    h+=`</div></div>`;
-  }
+  // 논의 필요/미결 섹션은 후속 진행과 중복되므로 표시하지 않음
   if(r.issues?.length){const issueTitle=S.tpl==='plan'?'⚠️ 이슈/리스크 및 고려사항':'⚠️ 이슈/리스크';h+=`<div class="result-section"><div class="result-section-title">${issueTitle}</div><div class="summary-box"><ul>`;r.issues.forEach(i=>h+=`<li>${i}</li>`);h+=`</ul></div></div>`;}
   if(etcStr)h+=`<div class="result-section"><div class="result-section-title">💬 기타</div><div class="summary-box">${etcStr.replace(/\n/g,'<br>')}</div></div>`;
   h+='</div>';document.getElementById('resultBody').innerHTML=h;
@@ -770,47 +742,49 @@ function renderResult(r){
 async function copyResult(){
   if(!S.result){showToast('복사할 내용이 없습니다');return;}
   const r=S.result,t=T.find(t=>t.id===r.template);const title=document.getElementById('mTitle').value||'회의록';const kpStr=cleanMarkdownList(r.keyPoints,true);const fsStr=cleanMarkdownList(r.fullSummary,true);const etcStr=cleanMarkdownList(r.etc);const dateTime=(r.date||'-')+(r.time?' '+r.time:'');
-  const atts=r.attendees||{};let attRows='';if(atts.planning)attRows+=`<tr><td><strong>기획실</strong></td><td>${atts.planning}</td></tr>`;if(atts.dev)attRows+=`<tr><td><strong>개발실</strong></td><td>${atts.dev}</td></tr>`;if(atts.mgmt)attRows+=`<tr><td><strong>개발관리실</strong></td><td>${atts.mgmt}</td></tr>`;if(atts.ai)attRows+=`<tr><td><strong>AI센터</strong></td><td>${atts.ai}</td></tr>`;if(atts.graphic)attRows+=`<tr><td><strong>그래픽실</strong></td><td>${atts.graphic}</td></tr>`;if(atts.etc)attRows+=`<tr><td></td><td>${atts.etc}</td></tr>`;
+  const atts=r.attendees||{};
+  const attParts=[];
+  if(atts.planning)attParts.push(`<strong>기획실</strong> ${atts.planning}`);
+  if(atts.dev)attParts.push(`<strong>개발실</strong> ${atts.dev}`);
+  if(atts.mgmt)attParts.push(`<strong>개발관리실</strong> ${atts.mgmt}`);
+  if(atts.ai)attParts.push(`<strong>AI센터</strong> ${atts.ai}`);
+  if(atts.graphic)attParts.push(`<strong>그래픽실</strong> ${atts.graphic}`);
+  if(atts.etc)attParts.push(atts.etc);
+  const attRows=attParts.length>0;
+  const attCell=attParts.join('<br>');
   const deptMap={planning:{label:'기획실',color:'#6B42B4',bg:'#f3eef9'},development:{label:'개발실',color:'#2A78BE',bg:'#edf4fb'},management:{label:'개발관리실',color:'#C85A18',bg:'#fdf0e8'},ai:{label:'AI센터',color:'#2A9E6F',bg:'#ecf8f3'},graphic:{label:'그래픽실',color:'#D946A8',bg:'#fbe9f3'}};
-  let html=`<h1>${t?.icon||''} [${t?.label||'회의'}] ${title}</h1>`;if(r.milestones?.length){html+=`<p>`;r.milestones.forEach(ms=>{const f=S.ms.find(m=>m.version===ms);html+=`<strong>🏷️ ${ms}${f?' — '+f.name:''}</strong>&nbsp;&nbsp;`;});html+=`</p>`;}
-  html+=`<table><tbody><tr><td><strong>날짜/시간</strong></td><td>${dateTime}</td><td><strong>장소</strong></td><td>${r.location||'-'}</td></tr><tr><td><strong>유형</strong></td><td>${t?.label||'-'}</td><td><strong>마일스톤</strong></td><td>${r.milestones?.length?r.milestones.join(', '):'-'}</td></tr></tbody></table>`;
-  if(attRows)html+=`<h2>👥 참석자</h2><table><tbody>${attRows}</tbody></table>`;
+  let html=`<h1>${t?.icon||''} [${t?.label||'회의'}] ${title}</h1>`;
+  html+=`<table><tbody><tr><td><strong>날짜/시간</strong></td><td>${dateTime}</td></tr><tr><td><strong>장소</strong></td><td>${r.location||'-'}</td></tr>${attRows?`<tr><td><strong>참석자</strong></td><td>${attCell}</td></tr>`:''}</tbody></table>`;
   if(r.links&&r.links.length>0){html+=`<h2>🔗 참고 링크</h2><ul>`;r.links.forEach(l=>html+=`<li><a href="${l}">${l}</a></li>`);html+=`</ul>`;}
   if(kpStr)html+=`<h2>💡 핵심 요약</h2>${markdownToConfluenceList(kpStr)}`;
   if(fsStr)html+=`<h2>📝 전체 내용 요약</h2>${markdownToConfluenceList(fsStr)}`;
   if(r.decisions?.length){html+=`<h2>✅ 결정사항</h2><ol>`;r.decisions.forEach(d=>html+=`<li><p>${d}</p></li>`);html+=`</ol>`;}
   if(r.followUps&&Object.keys(r.followUps).length>0){
-    let fuRows='';
+    // 도표 대신 부서별 제목 + 목록 형태
+    let fuBlocks='';
     Object.keys(deptMap).forEach(key=>{
       const items=r.followUps[key];
       if(!items||items.length===0)return;
+      let lis='';
       items.forEach(a=>{
         const task=a.task||(typeof a==='string'?a:'');
         if(!String(task).trim())return;
         const assignee=a.assignee||'';
-        // rowspan 미사용: rowspan + width 조합이 Confluence에서 표 폭을 깨뜨림
-        fuRows+=`<tr><td><strong>${deptMap[key].label}</strong></td><td>${task}</td><td>${assignee||'-'}</td></tr>`;
+        lis+=`<li><p>${task}${assignee?` <em>(${assignee})</em>`:''}</p></li>`;
       });
+      if(lis)fuBlocks+=`<h3>${deptMap[key].label}</h3><ul>${lis}</ul>`;
     });
-    // 항목이 없으면 머리글만 남은 빈 표를 만들지 않는다
-    if(fuRows){
+    if(fuBlocks){
       html+=`<h2>🎯 후속 진행</h2>`;
       if(r.followUps._deadline)html+=`<p><strong>📅 ${r.followUps._deadline}</strong></p>`;
-      html+=`<table><tbody><tr><th><strong>부서</strong></th><th><strong>할 일</strong></th><th><strong>담당자</strong></th></tr>${fuRows}</tbody></table>`;
+      html+=fuBlocks;
     }
   }
-  const discItems=r.followUps?.discussion||[];const pendItems=r.pending||[];
-  if(discItems.length>0||pendItems.length>0){
-    // '•' 문자를 담은 열로 불릿을 흉내내지 않고 실제 목록을 사용
-    html+=`<h2>⏳ 논의 필요 / 미결</h2><ul>`;
-    discItems.forEach(d=>{const txt=d.task||(typeof d==='string'?d:'');if(String(txt).trim())html+=`<li><p>${txt}</p></li>`;});
-    pendItems.forEach(p=>{if(String(p).trim())html+=`<li><p>${p}</p></li>`;});
-    html+=`</ul>`;
-  }
+  // 논의 필요/미결 섹션은 후속 진행과 중복되므로 출력하지 않음
   if(r.issues?.length){const il=S.tpl==='plan'?'이슈/리스크 및 고려사항':'이슈/리스크';html+=`<h2>⚠️ ${il}</h2><ul>`;r.issues.forEach(i=>html+=`<li><p>${i}</p></li>`);html+=`</ul>`;}
   if(etcStr)html+=`<h2>💬 기타</h2><p>${etcStr.replace(/\n/g,'<br>')}</p>`;
   html+=`<hr><p><em>Generated by SMILEGATE MEETING AI · ${new Date().toLocaleDateString('ko-KR')}</em></p>`;
-  let plain=`# [${t?.label||'회의'}] ${title}\n날짜: ${dateTime} | 장소: ${r.location||'-'}\n`;if(r.milestones?.length)plain+=`마일스톤: ${r.milestones.join(', ')}\n`;plain+=`\n참석자:\n${formatAttendees(r.attendees,false)}\n`;if(r.links&&r.links.length>0)plain+=`\n참고 링크:\n${r.links.map(l=>'- '+l).join('\n')}\n`;plain+='\n';if(kpStr)plain+=`## 핵심 요약\n${kpStr}\n\n`;if(fsStr)plain+=`## 전체 내용 요약\n${fsStr}\n\n`;if(r.decisions?.length)plain+=`## 결정사항\n${r.decisions.map((d,i)=>`${i+1}. ${d}`).join('\n')}\n\n`;if(r.followUps&&Object.keys(r.followUps).length>0){plain+=`## 후속 진행\n`;Object.keys(deptMap).forEach(key=>{if(r.followUps[key]&&r.followUps[key].length>0){plain+=`### ${deptMap[key].label}\n`;r.followUps[key].forEach(a=>{const task=a.task||(typeof a==='string'?a:'');const assignee=a.assignee?` (담당: ${a.assignee})`:'';plain+=`- ${task}${assignee}\n`;});}});plain+='\n';}const ptDisc=(r.followUps?.discussion||[]).map(d=>d.task||(typeof d==='string'?d:''));const ptPend=r.pending||[];const allPend=[...ptDisc,...ptPend];if(allPend.length)plain+=`## 논의 필요 / 미결\n${allPend.map(p=>'- '+p).join('\n')}\n\n`;if(r.issues?.length)plain+=`## ${S.tpl==='plan'?'이슈/리스크 및 고려사항':'이슈/리스크'}\n${r.issues.map(i=>'- '+i).join('\n')}\n\n`;if(etcStr)plain+=`## 기타\n${etcStr}\n`;
+  let plain=`# [${t?.label||'회의'}] ${title}\n날짜: ${dateTime} | 장소: ${r.location||'-'}\n`;plain+=`\n참석자:\n${formatAttendees(r.attendees,false)}\n`;if(r.links&&r.links.length>0)plain+=`\n참고 링크:\n${r.links.map(l=>'- '+l).join('\n')}\n`;plain+='\n';if(kpStr)plain+=`## 핵심 요약\n${kpStr}\n\n`;if(fsStr)plain+=`## 전체 내용 요약\n${fsStr}\n\n`;if(r.decisions?.length)plain+=`## 결정사항\n${r.decisions.map((d,i)=>`${i+1}. ${d}`).join('\n')}\n\n`;if(r.followUps&&Object.keys(r.followUps).length>0){plain+=`## 후속 진행\n`;Object.keys(deptMap).forEach(key=>{if(r.followUps[key]&&r.followUps[key].length>0){plain+=`### ${deptMap[key].label}\n`;r.followUps[key].forEach(a=>{const task=a.task||(typeof a==='string'?a:'');const assignee=a.assignee?` (담당: ${a.assignee})`:'';plain+=`- ${task}${assignee}\n`;});}});plain+='\n';}if(r.issues?.length)plain+=`## ${S.tpl==='plan'?'이슈/리스크 및 고려사항':'이슈/리스크'}\n${r.issues.map(i=>'- '+i).join('\n')}\n\n`;if(etcStr)plain+=`## 기타\n${etcStr}\n`;
   try{const ci=new ClipboardItem({'text/plain':new Blob([plain],{type:'text/plain'}),'text/html':new Blob([html],{type:'text/html'})});await navigator.clipboard.write([ci]);showToast('📋 Confluence 위키용 서식으로 복사되었습니다');}catch(err){navigator.clipboard.writeText(plain).then(()=>showToast('📋 텍스트로 복사되었습니다'));}
 }
 // 마크다운 불릿 → Confluence용 중첩 리스트

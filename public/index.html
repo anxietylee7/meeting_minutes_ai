@@ -143,8 +143,17 @@ body{font-family:'Noto Sans KR','DM Sans',sans-serif;background:var(--bg);color:
 .summary-box{padding:12px 14px;background:var(--surface);border-radius:var(--radius-sm);border:1px solid var(--border);font-size:13px;color:var(--text);line-height:1.7;}
 .summary-box h1,.summary-box h2,.summary-box h3{font-size:14px;font-weight:700;margin-bottom:6px;color:var(--text);}
 .summary-box p{margin-bottom:8px;}
-.summary-box ul,.summary-box ol{margin-left:20px;margin-bottom:8px;}
+/* 전역 리셋(*{padding:0})으로 죽은 리스트 들여쓰기를 복원하고, 단계별로 불릿을 구분 */
+.summary-box ul,.summary-box ol{margin:0 0 8px 0;padding-left:20px;list-style-position:outside;}
+.summary-box ul{list-style-type:disc;}
+.summary-box ul ul{list-style-type:circle;margin-top:4px;margin-bottom:4px;padding-left:20px;}
+.summary-box ul ul ul{list-style-type:square;}
+.summary-box ul ul ul ul{list-style-type:'– ';}
 .summary-box li{margin-bottom:4px;}
+.summary-box ul ul>li{color:var(--text2);}
+.summary-box ul ul ul>li{color:var(--text2);font-size:12.5px;}
+.summary-box ul ul>li::marker{color:var(--text3);}
+.summary-box ul ul ul>li::marker{color:var(--accent);}
 .summary-box strong{color:var(--accent);font-weight:700;}
 .result-footer{padding:12px 20px;border-top:1px solid var(--border);display:flex;gap:8px;flex-shrink:0;}
 .btn-copy,.btn-save{flex:1;padding:8px 14px;border-radius:var(--radius-sm);font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;transition:all 0.15s;font-family:inherit;}
@@ -574,7 +583,28 @@ async function generate(){
 }
 
 function showEmpty(){document.getElementById('statusDot').classList.remove('active');document.getElementById('saveBtn').disabled=true;document.getElementById('resultBody').innerHTML=`<div class="empty-state"><div class="empty-icon">✦</div><div class="empty-text">회의 내용을 입력하고 생성하세요</div></div>`;}
-function cleanMarkdownList(val,enforceList=false){if(!val)return'';let str=Array.isArray(val)?val.join('\n'):String(val);str=str.replace(/^[ \t]*-[ \t]*[◦▪ㅇ][ \t]*/gm,'  - ');str=str.replace(/^[ \t]*[◦▪ㅇ][ \t]*/gm,'  - ');if(enforceList&&!str.includes('- ')){str=str.split('\n').filter(line=>line.trim().length>0).map(line=>'- '+line.trim()).join('\n');}return str;}
+function cleanMarkdownList(val,enforceList=false){
+  if(!val)return'';
+  let str=Array.isArray(val)?val.join('\n'):String(val);
+  const depthOf=s=>{const sp=s.replace(/\t/g,'  ');return sp.length-sp.trimStart().length;};
+  // 1) ◦ ▪ ㅇ • 등 기호 불릿을 "- "로 바꾸되, 원래 들여쓰기 깊이를 보존한다
+  //    (이전에는 무조건 2칸으로 강제해서 3단계 이상이 1단계로 뭉개졌음)
+  str=str.split('\n').map(line=>{
+    const m=line.match(/^([ \t]*)(?:-[ \t]*)?[◦▪ㅇ•][ \t]*(.*)$/);
+    if(!m)return line;
+    const d=depthOf(line);
+    return ' '.repeat(Math.max(d,2))+'- '+m[2];
+  }).join('\n');
+  // 2) 불릿이 전혀 없으면 "- "를 부여하되, 공백 들여쓰기를 살려 계층을 유지한다
+  //    (이전에는 line.trim() 때문에 들여쓰기가 전부 삭제되어 평평해졌음)
+  if(enforceList&&!/(^|\n)[ \t]*-[ \t]/.test(str)){
+    str=str.split('\n').filter(l=>l.trim().length>0).map(l=>{
+      const d=depthOf(l);
+      return ' '.repeat(Math.floor(d/2)*2)+'- '+l.trim();
+    }).join('\n');
+  }
+  return str;
+}
 
 function renderResult(r){
   const tpl=T.find(t=>t.id===r.template);let h='<div class="result-content">';

@@ -815,12 +815,13 @@ async function copyResult(){
   const attRows=attParts.length>0;
   const attCell=attParts.length>0?`<ul>${attParts.map(x=>`<li><p>${x}</p></li>`).join('')}</ul>`:'';
   const deptMap={planning:{label:'기획실',color:'#6B42B4',bg:'#f3eef9'},development:{label:'개발실',color:'#2A78BE',bg:'#edf4fb'},management:{label:'개발관리실',color:'#C85A18',bg:'#fdf0e8'},ai:{label:'AI센터',color:'#2A9E6F',bg:'#ecf8f3'},graphic:{label:'그래픽실',color:'#D946A8',bg:'#fbe9f3'}};
-  let html=`<h1>${t?.icon||''} [${t?.label||'회의'}] ${title}</h1>`;
+  let html=`<h1>${title}</h1>`;
   html+=`<p>📅 <strong>일정</strong>&nbsp;&nbsp;${dateTime}</p>`;
   html+=`<p>📍 <strong>장소</strong>&nbsp;&nbsp;${r.location||'-'}</p>`;
   if(attRows)html+=`<p>👥 <strong>참석자</strong></p>${attCell}`;
+  html+=`<hr>`;
   if(r.links&&r.links.length>0){html+=`<h2>🔗 참고 링크</h2><ul>`;r.links.forEach(l=>html+=`<li><a href="${l}">${l}</a></li>`);html+=`</ul>`;}
-  if(kpStr)html+=`<h2>💡 핵심 요약</h2>${markdownToConfluenceList(kpStr)}`;
+  if(kpStr)html+=`<h2>💡 핵심 요약</h2>${markdownToConfluenceList(kpStr)}<hr>`;
   if(fsStr)html+=`<h2>📝 전체 내용 요약</h2>${markdownToConfluenceList(fsStr)}`;
   // ── 결정사항 + 후속 진행 통합 (구분선으로만 분리, 부서별 그룹핑 없음) ──
   {

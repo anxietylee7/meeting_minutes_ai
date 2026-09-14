@@ -674,7 +674,7 @@ function renderResult(r){
   if(r.decisions?.length){h+=`<div class="result-section"><div class="result-section-title">✅ 결정사항</div><div class="summary-box"><ul>`;r.decisions.forEach(d=>h+=`<li>${d}</li>`);h+=`</ul></div></div>`;}
   if(r.followUps&&Object.keys(r.followUps).length>0){
     const ed=S.fuEdit===true;
-    h+=`<div class="result-section"><div class="result-section-title" style="display:flex;align-items:center;justify-content:space-between;"><span>🎯 후속 진행</span><button class="fu-edit-btn${ed?' on':''}" onclick="toggleFuEdit()">${ed?'✓ 완료':'✏️ 수정'}</button></div>`;
+    h+=`<div class="result-section"><div style="display:flex;align-items:center;gap:10px;"><div class="result-section-title" style="flex:1;min-width:0;">🎯 후속 진행</div><button class="fu-edit-btn${ed?' on':''}" onclick="toggleFuEdit()" style="flex-shrink:0;">${ed?'✓ 완료':'✏️ 수정'}</button></div>`;
     if(ed)h+=`<div class="fu-hint">부서를 바꾸면 해당 부서로 이동합니다. 수정 후 아래 <strong>저장</strong> 버튼을 눌러주세요.</div>`;
     if(r.followUps._deadline)h+=`<div style="padding:8px 12px;background:var(--accent-light);border-radius:var(--radius-sm);border:1px solid rgba(224,107,32,0.2);font-size:13px;font-weight:600;color:var(--accent);margin-bottom:8px;">📅 ${r.followUps._deadline}</div>`;
     FU_DEPTS.forEach(dept=>{

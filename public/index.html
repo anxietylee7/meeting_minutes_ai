@@ -91,6 +91,8 @@ body{font-family:'Noto Sans KR','DM Sans',sans-serif;background:var(--bg);color:
 
 .editor-body{flex:1;display:flex;flex-direction:column;overflow:hidden;padding:14px 20px;gap:8px;background:var(--surface2);}
 .input-label{font-size:11px;font-weight:600;color:var(--text3);letter-spacing:0.5px;text-transform:uppercase;}
+.btn-tx-upload{padding:3px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text2);font-size:11px;font-weight:500;cursor:pointer;font-family:inherit;transition:all 0.15s;text-transform:none;letter-spacing:0;}
+.btn-tx-upload:hover{border-color:var(--accent);color:var(--accent);}
 .raw-textarea{flex:1;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;color:var(--text);font-size:13px;font-family:inherit;resize:none;outline:none;line-height:1.7;transition:border-color 0.15s;}
 .raw-textarea:focus{border-color:var(--accent);}
 .raw-textarea::placeholder{color:var(--text3);line-height:1.8;}
@@ -339,7 +341,7 @@ body{font-family:'Noto Sans KR','DM Sans',sans-serif;background:var(--bg);color:
           </div>
         </div>
         <div class="editor-body">
-          <div class="input-label">회의 내용 입력</div>
+          <div class="input-label">회의 내용 입력 <span style="font-weight:400;color:var(--text3);font-size:11px;">— 회의 중 직접 기입한 메모</span></div>
           <textarea class="raw-textarea" id="rawInput" placeholder="회의 내용을 자유롭게 입력하세요.
 날것의 메모, 대화 내용, 키워드 나열 등 어떤 형식이든 괜찮습니다." oninput="updateCount()"></textarea>
           <div class="image-drop-bar" id="imageBar" onclick="document.getElementById('imgInput').click()">
@@ -347,6 +349,15 @@ body{font-family:'Noto Sans KR','DM Sans',sans-serif;background:var(--bg);color:
             <div class="drop-text">이미지를 드래그하거나 <span>클릭하여 업로드</span>하면 텍스트 전사(OCR)를 수행합니다</div>
           </div>
           <input type="file" id="imgInput" accept="image/*" style="display:none" onchange="handleImage(event)">
+
+          <div class="input-label" style="margin-top:14px;display:flex;align-items:center;gap:8px;">
+            <span>녹음본 전사 텍스트 <span style="font-weight:400;color:var(--text3);font-size:11px;">— 선택. 있으면 메모와 합쳐 요약합니다</span></span>
+            <button class="btn-tx-upload" onclick="document.getElementById('txtInput').click()">📎 .txt 불러오기</button>
+            <button class="btn-tx-upload" id="txClearBtn" onclick="clearTranscript()" style="display:none;">비우기</button>
+          </div>
+          <textarea class="raw-textarea" id="transcriptInput" style="min-height:120px;" placeholder="녹음본 전사(STT) 전체 텍스트를 붙여넣거나 .txt 파일을 불러오세요.
+비워두면 위의 메모만으로 요약합니다." oninput="updateCount()"></textarea>
+          <input type="file" id="txtInput" accept=".txt,.md,.srt,.vtt,text/plain" style="display:none" onchange="handleTranscriptFile(event)">
         </div>
         <div class="editor-footer">
           <span class="char-count" id="charCount">0자</span>
@@ -635,7 +646,7 @@ function newMeeting(){S.curId=null;S.result=null;S.fuEdit=false;S.fuUndo=null;do
 
 function loadMeeting(id){const m=S.meetings.find(x=>x.id===id);if(!m)return;S.curId=id;S.result=m.result;S.fuEdit=false;S.fuUndo=null;document.getElementById('mTitle').value=m.title||'';document.getElementById('mDate').value=m.date||'';document.getElementById('mTime').value=m.time||'';document.getElementById('mLocation').value=m.location||'';const atts=m.attendees||{};document.getElementById('mAttPlanning').value=atts.planning||'';document.getElementById('mAttDev').value=atts.dev||'';document.getElementById('mAttMgmt').value=atts.mgmt||'';document.getElementById('mAttAi').value=atts.ai||'';document.getElementById('mAttGraphic').value=atts.graphic||'';document.getElementById('mAttEtc').value=atts.etc||'';document.getElementById('mLink1').value=m.links&&m.links[0]?m.links[0]:'';document.getElementById('mLink2').value=m.links&&m.links[1]?m.links[1]:'';document.getElementById('mLink3').value=m.links&&m.links[2]?m.links[2]:'';document.getElementById('mMilestone').value=m.milestone||'';document.getElementById('rawInput').value=m.raw||'';document.getElementById('topbarTitle').textContent=m.title||'제목 없음';S.tpl=m.template||'general';updateCount();if(m.result)renderResult(m.result);renderList();}
 
-function saveMeeting(){if(!S.result)return;fuPrune();const title=document.getElementById('mTitle').value.trim()||'제목 없음';const date=document.getElementById('mDate').value;const time=document.getElementById('mTime').value;const loc=document.getElementById('mLocation').value;const attendees={planning:document.getElementById('mAttPlanning').value.trim(),dev:document.getElementById('mAttDev').value.trim(),mgmt:document.getElementById('mAttMgmt').value.trim(),ai:document.getElementById('mAttAi').value.trim(),graphic:document.getElementById('mAttGraphic').value.trim(),etc:document.getElementById('mAttEtc').value.trim()};const l1=document.getElementById('mLink1').value.trim();const l2=document.getElementById('mLink2').value.trim();const l3=document.getElementById('mLink3').value.trim();const links=[l1,l2,l3].filter(Boolean);const ms=document.getElementById('mMilestone').value,raw=document.getElementById('rawInput').value.trim();let meeting;if(S.curId){const i=S.meetings.findIndex(m=>m.id===S.curId);if(i!==-1){S.meetings[i]={...S.meetings[i],title,date,time,location:loc,attendees,links,milestone:ms,raw,template:S.tpl,result:S.result};meeting=S.meetings[i];}}else{const id=Date.now().toString();S.curId=id;meeting={id,title,date,time,location:loc,attendees,links,milestone:ms,raw,template:S.tpl,result:S.result};S.meetings.push(meeting);}saveMeetings();renderList();document.getElementById('topbarTitle').textContent=title;syncToCloud(meeting);showToast('💾 저장되었습니다');}
+function saveMeeting(){if(!S.result)return;fuPrune();const title=document.getElementById('mTitle').value.trim()||'제목 없음';const date=document.getElementById('mDate').value;const time=document.getElementById('mTime').value;const loc=document.getElementById('mLocation').value;const attendees={planning:document.getElementById('mAttPlanning').value.trim(),dev:document.getElementById('mAttDev').value.trim(),mgmt:document.getElementById('mAttMgmt').value.trim(),ai:document.getElementById('mAttAi').value.trim(),graphic:document.getElementById('mAttGraphic').value.trim(),etc:document.getElementById('mAttEtc').value.trim()};const l1=document.getElementById('mLink1').value.trim();const l2=document.getElementById('mLink2').value.trim();const l3=document.getElementById('mLink3').value.trim();const links=[l1,l2,l3].filter(Boolean);const ms=document.getElementById('mMilestone').value,raw=document.getElementById('rawInput').value.trim(),transcript=document.getElementById('transcriptInput').value.trim();let meeting;if(S.curId){const i=S.meetings.findIndex(m=>m.id===S.curId);if(i!==-1){S.meetings[i]={...S.meetings[i],title,date,time,location:loc,attendees,links,milestone:ms,raw,transcript,template:S.tpl,result:S.result};meeting=S.meetings[i];}}else{const id=Date.now().toString();S.curId=id;meeting={id,title,date,time,location:loc,attendees,links,milestone:ms,raw,transcript,template:S.tpl,result:S.result};S.meetings.push(meeting);}saveMeetings();renderList();document.getElementById('topbarTitle').textContent=title;syncToCloud(meeting);showToast('💾 저장되었습니다');}
 
 function deleteMeeting(){
   if(!S.curId){showToast('삭제할 회의록이 없습니다');return;}
@@ -648,21 +659,54 @@ function deleteMeeting(){
   showToast('🗑 삭제되었습니다');
 }
 function updateTitle(){document.getElementById('topbarTitle').textContent=document.getElementById('mTitle').value.trim()||'새 회의록';}
-function updateCount(){document.getElementById('charCount').textContent=document.getElementById('rawInput').value.length.toLocaleString()+'자';}
+function updateCount(){
+  const memo=document.getElementById('rawInput').value.length;
+  const tx=document.getElementById('transcriptInput').value.length;
+  const el=document.getElementById('charCount');
+  el.textContent=tx>0
+    ? `메모 ${memo.toLocaleString()}자 + 전사 ${tx.toLocaleString()}자`
+    : `${memo.toLocaleString()}자`;
+  document.getElementById('txClearBtn').style.display=tx>0?'':'none';
+}
+// 녹음본 전사 .txt 파일 불러오기
+function handleTranscriptFile(e){
+  const file=e.target.files[0];if(!file)return;
+  const MAX=3*1024*1024; // 3MB 초과는 비용/처리 측면에서 거부
+  if(file.size>MAX){showToast('파일이 너무 큽니다 (3MB 이하)');e.target.value='';return;}
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    let text=String(ev.target.result||'');
+    // SRT/VTT 자막 형식이면 타임코드·번호 줄을 제거해 토큰을 절약
+    if(/\.(srt|vtt)$/i.test(file.name)){
+      text=text.split('\n')
+        .filter(l=>!/^\s*\d+\s*$/.test(l)&&!/-->/.test(l)&&!/^WEBVTT/i.test(l))
+        .join('\n').replace(/\n{3,}/g,'\n\n');
+    }
+    document.getElementById('transcriptInput').value=text.trim();
+    updateCount();
+    showToast(`📎 ${file.name} 불러왔습니다 (${text.trim().length.toLocaleString()}자)`);
+  };
+  reader.onerror=()=>showToast('❌ 파일을 읽지 못했습니다');
+  reader.readAsText(file,'utf-8');
+  e.target.value='';
+}
+function clearTranscript(){document.getElementById('transcriptInput').value='';updateCount();}
 
 function formatAttendees(atts,isHtml=true){if(!atts)return'-';if(typeof atts==='string')return atts;let r=[];if(atts.planning)r.push((isHtml?'<strong>기획실:</strong> ':'기획실: ')+atts.planning);if(atts.dev)r.push((isHtml?'<strong>개발실:</strong> ':'개발실: ')+atts.dev);if(atts.mgmt)r.push((isHtml?'<strong>개발관리실:</strong> ':'개발관리실: ')+atts.mgmt);if(atts.ai)r.push((isHtml?'<strong>AI센터:</strong> ':'AI센터: ')+atts.ai);if(atts.graphic)r.push((isHtml?'<strong>그래픽실:</strong> ':'그래픽실: ')+atts.graphic);if(atts.etc)r.push(atts.etc);return r.length>0?r.join(isHtml?'<br>':'\n'):'-';}
 
 async function generate(){
-  const raw=document.getElementById('rawInput').value.trim();if(!raw){showToast('회의 내용을 입력해주세요');return;}
+  const raw=document.getElementById('rawInput').value.trim();
+  const transcript=document.getElementById('transcriptInput').value.trim();
+  if(!raw&&!transcript){showToast('회의 내용 또는 녹음본 전사를 입력해주세요');return;}
   const date=document.getElementById('mDate').value;const time=document.getElementById('mTime').value;const loc=document.getElementById('mLocation').value;
   const attendees={planning:document.getElementById('mAttPlanning').value.trim(),dev:document.getElementById('mAttDev').value.trim(),mgmt:document.getElementById('mAttMgmt').value.trim(),ai:document.getElementById('mAttAi').value.trim(),graphic:document.getElementById('mAttGraphic').value.trim(),etc:document.getElementById('mAttEtc').value.trim()};
   const l1=document.getElementById('mLink1').value.trim();const l2=document.getElementById('mLink2').value.trim();const l3=document.getElementById('mLink3').value.trim();const links=[l1,l2,l3].filter(Boolean);const ms=document.getElementById('mMilestone').value;
   document.getElementById('genBtn').disabled=true;document.getElementById('genBtn').textContent='생성 중...';document.getElementById('saveBtn').disabled=true;document.getElementById('statusDot').classList.remove('active');
   document.getElementById('resultBody').innerHTML=`<div class="loading-state"><div class="spinner"></div><div class="loading-text">AI가 회의 내용 분석 중...</div><div class="loading-sub">마일스톤 ${S.ms.length}개 참조</div></div>`;
   try{
-    const response=await fetch('/api/generate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({rawText:raw,template:S.tpl,dict:S.dict,milestones:S.ms,links:links,attendees:attendees})});
+    const response=await fetch('/api/generate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({rawText:raw,transcript:transcript,template:S.tpl,dict:S.dict,milestones:S.ms,links:links,attendees:attendees})});
     const aiData=await response.json();if(!response.ok)throw new Error(aiData.error||'API 호출 실패');
-    S.fuEdit=false;S.fuUndo=null;S.result={...aiData,date,time,location:loc,attendees,links,template:S.tpl,raw};if(ms)S.result.milestones=[ms];
+    S.fuEdit=false;S.fuUndo=null;S.result={...aiData,date,time,location:loc,attendees,links,template:S.tpl,raw,transcript};if(ms)S.result.milestones=[ms];
     renderResult(S.result);document.getElementById('statusDot').classList.add('active');document.getElementById('saveBtn').disabled=false;showToast('✦ 회의록이 생성되었습니다');
   }catch(err){console.error(err);showToast('❌ 생성 실패: '+err.message);showEmpty();}
   finally{document.getElementById('genBtn').disabled=false;document.getElementById('genBtn').textContent='✦ 회의록 생성';}

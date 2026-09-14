@@ -57,9 +57,17 @@ export default async function handler(req, res) {
         'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`
       },
       body: JSON.stringify({
-        model: 'gpt-4.1-mini',
-        max_tokens: 2500,
-        temperature: 0.2,
+        model: 'gpt-5.6-luna',
+        // GPT-5 계열 주의사항:
+        // 1) max_tokens 대신 max_completion_tokens 사용 (max_tokens는 400 에러)
+        // 2) temperature 미지원 (1 외의 값은 400 에러) → 아예 보내지 않음.
+        //    출력 일관성은 프롬프트의 규칙으로 통제한다.
+        // 3) 추론(reasoning) 토큰이 이 예산을 함께 소모하므로 한도를 넉넉히 잡아야
+        //    "추론에 예산을 다 써서 본문이 비는" 현상을 막을 수 있다.
+        max_completion_tokens: 8000,
+        // 요약 작업은 낮은 추론으로 충분하며, 추론 토큰이 곧 출력 요금이라 비용도 절약된다.
+        // 품질이 부족하면 'medium', 더 아끼려면 'none'으로 조정.
+        reasoning_effort: 'low',
         messages: [
           {
             role: "system",
@@ -454,7 +462,32 @@ JSON 출력 구조 (엄격 준수)
       });
     }
 
-    const resultJson = JSON.parse(data.choices[0].message.content);
+    const choice = data.choices && data.choices[0];
+    const content = choice && choice.message && choice.message.content;
+
+    // 추론 모델(GPT-5 계열)은 추론 토큰이 출력 예산을 소모하므로,
+    // 한도가 부족하면 본문이 빈 채로 finish_reason='length'가 돌아올 수 있다.
+    if (!content || !content.trim()) {
+      console.error("Empty content:", JSON.stringify({
+        finish_reason: choice && choice.finish_reason,
+        usage: data.usage
+      }));
+      return res.status(502).json({
+        error: choice && choice.finish_reason === 'length'
+          ? '응답 길이 한도에 걸려 결과가 비었습니다. max_completion_tokens를 늘리거나 reasoning_effort를 낮춰주세요.'
+          : '모델이 빈 응답을 반환했습니다. 잠시 후 다시 시도해주세요.'
+      });
+    }
+
+    // 혹시 코드펜스(```json)가 섞여 오는 경우를 대비해 제거 후 파싱
+    const cleaned = content.trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/,'');
+    let resultJson;
+    try {
+      resultJson = JSON.parse(cleaned);
+    } catch (e) {
+      console.error("JSON parse failed. raw:", cleaned.slice(0, 500));
+      return res.status(502).json({ error: 'AI 응답을 JSON으로 해석하지 못했습니다. 다시 시도해주세요.' });
+    }
     res.status(200).json(resultJson);
 
   } catch (error) {

@@ -452,8 +452,16 @@ const FU_DEPTS=[
 ];
 // input value 속성에 안전하게 넣기 위한 이스케이프
 function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
-// **텍스트** → <strong>텍스트</strong> (후속 진행·결정사항 등은 마크다운 파서를 거치지 않으므로 직접 변환)
-function mdBold(s){return String(s==null?'':s).replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>');}
+// Confluence/화면 공용 인라인 서식 변환
+//  **대표님) 내용**  → 파란색 볼드 (의사결정권자 발언)
+//  **내용**          → 일반 볼드
+//  _내용_            → 밑줄 (주목할 요청·제안)
+function fmtInline(s){
+  return String(s==null?'':s)
+    .replace(/\*\*\s*대표님\)\s*(.+?)\*\*/g,'<strong><span style="color: #0747a6">대표님) $1</span></strong>')
+    .replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')
+    .replace(/_([^_\n]+)_/g,'<u>$1</u>');
+}
 function fuList(key){
   if(!S.result)return null;
   if(!S.result.followUps)S.result.followUps={};
@@ -763,7 +771,7 @@ function renderResult(r){
       h+=`<div class="summary-box">`;
       if(hasDec){
         h+=`<div class="dc-label">결정사항</div><ul>`;
-        r.decisions.forEach(d=>h+=`<li>${mdBold(d)}</li>`);
+        r.decisions.forEach(d=>h+=`<li>${fmtInline(d)}</li>`);
         h+=`</ul>`;
       }
       if(flat.length>0||ed){
@@ -786,7 +794,7 @@ function renderResult(r){
           h+=`<ul>`;
           flat.forEach(({dept,a})=>{
             const task=a.task||(typeof a==='string'?a:'');const assignee=a.assignee||'';
-            h+=`<li><span class="fu-tag" style="color:${dept.color};border-color:${dept.color}55;">${dept.label}</span> ${mdBold(task)}${assignee?` <span style="font-size:10px;font-weight:600;color:${dept.color};">(${assignee})</span>`:''}</li>`;
+            h+=`<li><span class="fu-tag" style="color:${dept.color};border-color:${dept.color}55;">${dept.label}</span> ${fmtInline(task)}${assignee?` <span style="font-size:10px;font-weight:600;color:${dept.color};">(${assignee})</span>`:''}</li>`;
           });
           h+=`</ul>`;
         }
@@ -795,7 +803,7 @@ function renderResult(r){
     }
   }
   // 논의 필요/미결 섹션은 후속 진행과 중복되므로 표시하지 않음
-  if(r.issues?.length){const issueTitle=S.tpl==='plan'?'⚠️ 이슈/리스크 및 고려사항':'⚠️ 이슈/리스크';h+=`<div class="result-section"><div class="result-section-title">${issueTitle}</div><div class="summary-box"><ul>`;r.issues.forEach(i=>h+=`<li>${mdBold(i)}</li>`);h+=`</ul></div></div>`;}
+  if(r.issues?.length){const issueTitle=S.tpl==='plan'?'⚠️ 이슈/리스크 및 고려사항':'⚠️ 이슈/리스크';h+=`<div class="result-section"><div class="result-section-title">${issueTitle}</div><div class="summary-box"><ul>`;r.issues.forEach(i=>h+=`<li>${fmtInline(i)}</li>`);h+=`</ul></div></div>`;}
   if(etcStr)h+=`<div class="result-section"><div class="result-section-title">💬 기타</div><div class="summary-box">${etcStr.replace(/\n/g,'<br>')}</div></div>`;
   h+='</div>';document.getElementById('resultBody').innerHTML=h;
 }
@@ -813,17 +821,22 @@ async function copyResult(){
   if(atts.graphic)attParts.push(`<strong>그래픽실</strong> ${atts.graphic}`);
   if(atts.etc)attParts.push(atts.etc);
   const attRows=attParts.length>0;
-  const attCell=attParts.length>0?`<ul>${attParts.map(x=>`<li><p>${x}</p></li>`).join('')}</ul>`:'';
+  const attCell=attParts.length>0?`<ul>${attParts.map(x=>`<li><p style="font-size: 12px">${x}</p></li>`).join('')}</ul>`:'';
   const deptMap={planning:{label:'기획실',color:'#6B42B4',bg:'#f3eef9'},development:{label:'개발실',color:'#2A78BE',bg:'#edf4fb'},management:{label:'개발관리실',color:'#C85A18',bg:'#fdf0e8'},ai:{label:'AI센터',color:'#2A9E6F',bg:'#ecf8f3'},graphic:{label:'그래픽실',color:'#D946A8',bg:'#fbe9f3'}};
+  // ── Confluence 서식: 12px 본문 / 분홍 형광펜 섹션 제목 / 대표님 발언 파란 볼드 ──
+  const P='<p style="font-size: 12px">';
+  const SEC=t=>`${P}<strong><span style="background-color: #fdd0ec">${t}</span></strong></p>`;
   let html=`<h1>${title}</h1>`;
-  html+=`<p>📅 <strong>일정</strong>&nbsp;&nbsp;${dateTime}</p>`;
-  html+=`<p>📍 <strong>장소</strong>&nbsp;&nbsp;${r.location||'-'}</p>`;
-  if(attRows)html+=`<p>👥 <strong>참석자</strong></p>${attCell}`;
+  html+=`${P}📅 <strong>일정</strong>&nbsp;&nbsp;${dateTime}</p>`;
+  html+=`${P}📍 <strong>장소</strong>&nbsp;&nbsp;${r.location||'-'}</p>`;
+  if(attRows)html+=`${P}👥 <strong>참석자</strong></p>${attCell}`;
+  if(r.links&&r.links.length>0){
+    html+=`${P}<strong>🔗 참고 링크</strong>&nbsp;&nbsp;${r.links.map(l=>`<a href="${l}">${l}</a>`).join('&nbsp;&nbsp;')}</p>`;
+  }
   html+=`<hr>`;
-  if(r.links&&r.links.length>0){html+=`<h2>🔗 참고 링크</h2><ul>`;r.links.forEach(l=>html+=`<li><a href="${l}">${l}</a></li>`);html+=`</ul>`;}
-  if(kpStr)html+=`<h2>💡 핵심 요약</h2>${markdownToConfluenceList(kpStr)}<hr>`;
-  if(fsStr)html+=`<h2>📝 전체 내용 요약</h2>${markdownToConfluenceList(fsStr)}`;
-  // ── 결정사항 + 후속 진행 통합 (구분선으로만 분리, 부서별 그룹핑 없음) ──
+  if(kpStr)html+=`${SEC('💡 핵심 요약')}${markdownToConfluenceList(kpStr)}<hr>`;
+  if(fsStr)html+=`${SEC('📝 전체 내용 요약')}${markdownToConfluenceList(fsStr)}<hr>`;
+  // ── 결정사항 + 후속 진행 통합 ──
   {
     const hasDec=!!(r.decisions&&r.decisions.length);
     let fuLis='';
@@ -832,22 +845,20 @@ async function copyResult(){
         const task=a.task||(typeof a==='string'?a:'');
         if(!String(task).trim())return;
         const assignee=a.assignee||'';
-        fuLis+=`<li><p><strong>[${deptMap[key].label}]</strong> ${mdBold(task)}${assignee?` <em>(${assignee})</em>`:''}</p></li>`;
+        fuLis+=`<li>${P}<strong>[${deptMap[key].label}]</strong> ${fmtInline(task)}${assignee?` <em>(${assignee})</em>`:''}</p></li>`;
       });
     });
     if(hasDec||fuLis){
-      html+=`<h2>✅ 결정사항 &amp; 후속 진행</h2>`;
-      if(hasDec){html+=`<p><strong>결정사항</strong></p><ol>`;r.decisions.forEach(d=>html+=`<li><p>${mdBold(d)}</p></li>`);html+=`</ol>`;}
-      if(fuLis){
-        if(hasDec)html+=`<hr>`;
-        html+=`<p><strong>후속 진행</strong></p><ul>${fuLis}</ul>`;
-      }
+      html+=SEC('✅ 결정사항 &amp; 후속 진행');
+      if(hasDec){html+=`${P}<strong>결정사항</strong></p><ol>`;r.decisions.forEach(d=>html+=`<li>${P}${fmtInline(d)}</p></li>`);html+=`</ol>`;}
+      if(fuLis){html+=`${P}<strong>후속 진행</strong></p><ul>${fuLis}</ul>`;}
+      html+=`<hr>`;
     }
   }
-  // 논의 필요/미결 섹션은 후속 진행과 중복되므로 출력하지 않음
-  if(r.issues?.length){const il=S.tpl==='plan'?'이슈/리스크 및 고려사항':'이슈/리스크';html+=`<h2>⚠️ ${il}</h2><ul>`;r.issues.forEach(i=>html+=`<li><p>${mdBold(i)}</p></li>`);html+=`</ul>`;}
-  if(etcStr)html+=`<h2>💬 기타</h2><p>${etcStr.replace(/\n/g,'<br>')}</p>`;
-  html+=`<hr><p><em>Generated by SMILEGATE MEETING AI · ${new Date().toLocaleDateString('ko-KR')}</em></p>`;
+  if(r.issues?.length){const il=S.tpl==='plan'?'이슈/리스크 및 고려사항':'이슈/리스크';html+=`${SEC('⚠️ '+il)}<ul>`;r.issues.forEach(i=>html+=`<li>${P}${fmtInline(i)}</p></li>`);html+=`</ul>`;}
+  if(etcStr)html+=`${SEC('💬 기타')}${P}${etcStr.replace(/\n/g,'<br>')}</p>`;
+  html+=`<hr>${P}<em>Generated by SMILEGATE MEETING AI · ${new Date().toLocaleDateString('ko-KR')}</em></p>`;
+
   let plain=`# [${t?.label||'회의'}] ${title}\n날짜: ${dateTime} | 장소: ${r.location||'-'}\n`;plain+=`\n참석자:\n${formatAttendees(r.attendees,false)}\n`;if(r.links&&r.links.length>0)plain+=`\n참고 링크:\n${r.links.map(l=>'- '+l).join('\n')}\n`;plain+='\n';if(kpStr)plain+=`## 핵심 요약\n${kpStr}\n\n`;if(fsStr)plain+=`## 전체 내용 요약\n${fsStr}\n\n`;if(r.decisions?.length||r.followUps){plain+=`## 결정사항 & 후속 진행\n`;if(r.decisions?.length)plain+=`[결정사항]\n${r.decisions.map((d,i)=>`${i+1}. ${d}`).join('\n')}\n\n`;let ptFu='';Object.keys(deptMap).forEach(key=>{(r.followUps&&r.followUps[key]||[]).forEach(a=>{const task=a.task||(typeof a==='string'?a:'');if(!String(task).trim())return;const assignee=a.assignee?` (담당: ${a.assignee})`:'';ptFu+=`- [${deptMap[key].label}] ${task}${assignee}\n`;});});if(ptFu)plain+=`[후속 진행]\n${ptFu}`;plain+='\n';}if(r.issues?.length)plain+=`## ${S.tpl==='plan'?'이슈/리스크 및 고려사항':'이슈/리스크'}\n${r.issues.map(i=>'- '+i).join('\n')}\n\n`;if(etcStr)plain+=`## 기타\n${etcStr}\n`;
   try{const ci=new ClipboardItem({'text/plain':new Blob([plain],{type:'text/plain'}),'text/html':new Blob([html],{type:'text/html'})});await navigator.clipboard.write([ci]);showToast('📋 Confluence 위키용 서식으로 복사되었습니다');}catch(err){navigator.clipboard.writeText(plain).then(()=>showToast('📋 텍스트로 복사되었습니다'));}
 }
@@ -855,7 +866,7 @@ async function copyResult(){
 // - 공백 2칸 = 1단계, 깊이 제한 없음 (기존 구현은 2단계까지만 지원)
 // - <ul>을 <li> 안에 넣는 올바른 중첩 구조 (기존은 <ul> 형제로 두어 서식이 깨졌음)
 function markdownToConfluenceList(mdStr){
-  const fmt=s=>String(s).replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>');
+  const fmt=s=>fmtInline(s);
   const lines=[];
   String(mdStr||'').split('\n').forEach(line=>{
     if(!line.trim())return;
@@ -873,7 +884,7 @@ function markdownToConfluenceList(mdStr){
     while(idx<lines.length){
       const cur=lines[idx];
       if(cur.d===null||cur.d<depth)break;
-      let li=`<li><p>${fmt(cur.t)}</p>`;
+      let li=`<li><p style="font-size: 12px">${fmt(cur.t)}</p>`;
       idx++;
       if(idx<lines.length&&lines[idx].d!==null&&lines[idx].d>depth){
         li+=renderList(lines[idx].d);
@@ -884,7 +895,7 @@ function markdownToConfluenceList(mdStr){
   }
   let html='';
   while(idx<lines.length){
-    if(lines[idx].d===null){html+=`<p>${fmt(lines[idx].t)}</p>`;idx++;}
+    if(lines[idx].d===null){html+=`<p style="font-size: 12px">${fmt(lines[idx].t)}</p>`;idx++;}
     else html+=renderList(lines[idx].d);
   }
   return html;

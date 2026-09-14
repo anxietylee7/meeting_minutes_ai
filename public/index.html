@@ -770,24 +770,87 @@ function renderResult(r){
 async function copyResult(){
   if(!S.result){showToast('복사할 내용이 없습니다');return;}
   const r=S.result,t=T.find(t=>t.id===r.template);const title=document.getElementById('mTitle').value||'회의록';const kpStr=cleanMarkdownList(r.keyPoints,true);const fsStr=cleanMarkdownList(r.fullSummary,true);const etcStr=cleanMarkdownList(r.etc);const dateTime=(r.date||'-')+(r.time?' '+r.time:'');
-  const atts=r.attendees||{};let attRows='';if(atts.planning)attRows+=`<tr><td bgcolor="#f0f0f0" width="120"><strong>기획실</strong></td><td>${atts.planning}</td></tr>`;if(atts.dev)attRows+=`<tr><td bgcolor="#f0f0f0" width="120"><strong>개발실</strong></td><td>${atts.dev}</td></tr>`;if(atts.mgmt)attRows+=`<tr><td bgcolor="#f0f0f0" width="120"><strong>개발관리실</strong></td><td>${atts.mgmt}</td></tr>`;if(atts.ai)attRows+=`<tr><td bgcolor="#f0f0f0" width="120"><strong>AI센터</strong></td><td>${atts.ai}</td></tr>`;if(atts.graphic)attRows+=`<tr><td bgcolor="#f0f0f0" width="120"><strong>그래픽실</strong></td><td>${atts.graphic}</td></tr>`;if(atts.etc)attRows+=`<tr><td bgcolor="#f0f0f0" width="120"></td><td>${atts.etc}</td></tr>`;
+  const atts=r.attendees||{};let attRows='';if(atts.planning)attRows+=`<tr><td><strong>기획실</strong></td><td>${atts.planning}</td></tr>`;if(atts.dev)attRows+=`<tr><td><strong>개발실</strong></td><td>${atts.dev}</td></tr>`;if(atts.mgmt)attRows+=`<tr><td><strong>개발관리실</strong></td><td>${atts.mgmt}</td></tr>`;if(atts.ai)attRows+=`<tr><td><strong>AI센터</strong></td><td>${atts.ai}</td></tr>`;if(atts.graphic)attRows+=`<tr><td><strong>그래픽실</strong></td><td>${atts.graphic}</td></tr>`;if(atts.etc)attRows+=`<tr><td></td><td>${atts.etc}</td></tr>`;
   const deptMap={planning:{label:'기획실',color:'#6B42B4',bg:'#f3eef9'},development:{label:'개발실',color:'#2A78BE',bg:'#edf4fb'},management:{label:'개발관리실',color:'#C85A18',bg:'#fdf0e8'},ai:{label:'AI센터',color:'#2A9E6F',bg:'#ecf8f3'},graphic:{label:'그래픽실',color:'#D946A8',bg:'#fbe9f3'}};
   let html=`<h1>${t?.icon||''} [${t?.label||'회의'}] ${title}</h1>`;if(r.milestones?.length){html+=`<p>`;r.milestones.forEach(ms=>{const f=S.ms.find(m=>m.version===ms);html+=`<strong>🏷️ ${ms}${f?' — '+f.name:''}</strong>&nbsp;&nbsp;`;});html+=`</p>`;}
-  html+=`<table border="1" cellpadding="8" cellspacing="0" width="100%"><tbody><tr><td bgcolor="#f4f5f7" width="120"><strong>날짜/시간</strong></td><td width="200">${dateTime}</td><td bgcolor="#f4f5f7" width="120"><strong>장소</strong></td><td>${r.location||'-'}</td></tr><tr><td bgcolor="#f4f5f7"><strong>유형</strong></td><td>${t?.label||'-'}</td><td bgcolor="#f4f5f7"><strong>마일스톤</strong></td><td>${r.milestones?.length?r.milestones.join(', '):'-'}</td></tr></tbody></table>`;
-  if(attRows)html+=`<h2>👥 참석자</h2><table border="1" cellpadding="8" cellspacing="0" width="100%"><tbody>${attRows}</tbody></table>`;
+  html+=`<table><tbody><tr><td><strong>날짜/시간</strong></td><td>${dateTime}</td><td><strong>장소</strong></td><td>${r.location||'-'}</td></tr><tr><td><strong>유형</strong></td><td>${t?.label||'-'}</td><td><strong>마일스톤</strong></td><td>${r.milestones?.length?r.milestones.join(', '):'-'}</td></tr></tbody></table>`;
+  if(attRows)html+=`<h2>👥 참석자</h2><table><tbody>${attRows}</tbody></table>`;
   if(r.links&&r.links.length>0){html+=`<h2>🔗 참고 링크</h2><ul>`;r.links.forEach(l=>html+=`<li><a href="${l}">${l}</a></li>`);html+=`</ul>`;}
-  if(kpStr)html+=`<h2>💡 핵심 요약</h2><table border="0" cellpadding="12" cellspacing="0" width="100%"><tbody><tr><td bgcolor="#fffbe6">${markdownToConfluenceList(kpStr)}</td></tr></tbody></table>`;
+  if(kpStr)html+=`<h2>💡 핵심 요약</h2>${markdownToConfluenceList(kpStr)}`;
   if(fsStr)html+=`<h2>📝 전체 내용 요약</h2>${markdownToConfluenceList(fsStr)}`;
-  if(r.decisions?.length){html+=`<h2>✅ 결정사항</h2><table border="1" cellpadding="8" cellspacing="0" width="100%"><tbody><tr><td bgcolor="#e3fcef" width="30"><strong>#</strong></td><td bgcolor="#e3fcef"><strong>결정 내용</strong></td></tr>`;r.decisions.forEach((d,i)=>html+=`<tr><td>${i+1}</td><td>${d}</td></tr>`);html+=`</tbody></table>`;}
-  if(r.followUps&&Object.keys(r.followUps).length>0){html+=`<h2>🎯 후속 진행</h2><table border="1" cellpadding="8" cellspacing="0" width="100%"><tbody><tr><td bgcolor="#deebff" width="120"><strong>부서</strong></td><td bgcolor="#deebff"><strong>할 일</strong></td><td bgcolor="#deebff" width="120"><strong>담당자</strong></td></tr>`;Object.keys(deptMap).forEach(key=>{const items=r.followUps[key];if(items&&items.length>0){items.forEach((a,i)=>{const task=a.task||(typeof a==='string'?a:'');const assignee=a.assignee||'';html+=`<tr>`;if(i===0)html+=`<td bgcolor="${deptMap[key].bg}" rowspan="${items.length}"><strong>${deptMap[key].label}</strong></td>`;html+=`<td>${task}</td><td>${assignee||'-'}</td></tr>`;});}});html+=`</tbody></table>`;}
-  const discItems=r.followUps?.discussion||[];const pendItems=r.pending||[];if(discItems.length>0||pendItems.length>0){html+=`<h2>⏳ 논의 필요 / 미결</h2><table border="1" cellpadding="8" cellspacing="0" width="100%"><tbody><tr><td bgcolor="#fff7e6"><strong>⏳</strong></td><td bgcolor="#fff7e6"><strong>미결 사항</strong></td></tr>`;discItems.forEach(d=>{const txt=d.task||(typeof d==='string'?d:'');html+=`<tr><td width="30">•</td><td>${txt}</td></tr>`;});pendItems.forEach(p=>html+=`<tr><td width="30">•</td><td>${p}</td></tr>`);html+=`</tbody></table>`;}
-  if(r.issues?.length){const il=S.tpl==='plan'?'이슈/리스크 및 고려사항':'이슈/리스크';html+=`<h2>⚠️ ${il}</h2><table border="1" cellpadding="8" cellspacing="0" width="100%"><tbody><tr><td bgcolor="#ffebe6"><strong>⚠️</strong></td><td bgcolor="#ffebe6"><strong>${il}</strong></td></tr>`;r.issues.forEach(i=>html+=`<tr><td width="30">•</td><td>${i}</td></tr>`);html+=`</tbody></table>`;}
+  if(r.decisions?.length){html+=`<h2>✅ 결정사항</h2><ol>`;r.decisions.forEach(d=>html+=`<li><p>${d}</p></li>`);html+=`</ol>`;}
+  if(r.followUps&&Object.keys(r.followUps).length>0){
+    let fuRows='';
+    Object.keys(deptMap).forEach(key=>{
+      const items=r.followUps[key];
+      if(!items||items.length===0)return;
+      items.forEach(a=>{
+        const task=a.task||(typeof a==='string'?a:'');
+        if(!String(task).trim())return;
+        const assignee=a.assignee||'';
+        // rowspan 미사용: rowspan + width 조합이 Confluence에서 표 폭을 깨뜨림
+        fuRows+=`<tr><td><strong>${deptMap[key].label}</strong></td><td>${task}</td><td>${assignee||'-'}</td></tr>`;
+      });
+    });
+    // 항목이 없으면 머리글만 남은 빈 표를 만들지 않는다
+    if(fuRows){
+      html+=`<h2>🎯 후속 진행</h2>`;
+      if(r.followUps._deadline)html+=`<p><strong>📅 ${r.followUps._deadline}</strong></p>`;
+      html+=`<table><tbody><tr><th><strong>부서</strong></th><th><strong>할 일</strong></th><th><strong>담당자</strong></th></tr>${fuRows}</tbody></table>`;
+    }
+  }
+  const discItems=r.followUps?.discussion||[];const pendItems=r.pending||[];
+  if(discItems.length>0||pendItems.length>0){
+    // '•' 문자를 담은 열로 불릿을 흉내내지 않고 실제 목록을 사용
+    html+=`<h2>⏳ 논의 필요 / 미결</h2><ul>`;
+    discItems.forEach(d=>{const txt=d.task||(typeof d==='string'?d:'');if(String(txt).trim())html+=`<li><p>${txt}</p></li>`;});
+    pendItems.forEach(p=>{if(String(p).trim())html+=`<li><p>${p}</p></li>`;});
+    html+=`</ul>`;
+  }
+  if(r.issues?.length){const il=S.tpl==='plan'?'이슈/리스크 및 고려사항':'이슈/리스크';html+=`<h2>⚠️ ${il}</h2><ul>`;r.issues.forEach(i=>html+=`<li><p>${i}</p></li>`);html+=`</ul>`;}
   if(etcStr)html+=`<h2>💬 기타</h2><p>${etcStr.replace(/\n/g,'<br>')}</p>`;
   html+=`<hr><p><em>Generated by SMILEGATE MEETING AI · ${new Date().toLocaleDateString('ko-KR')}</em></p>`;
   let plain=`# [${t?.label||'회의'}] ${title}\n날짜: ${dateTime} | 장소: ${r.location||'-'}\n`;if(r.milestones?.length)plain+=`마일스톤: ${r.milestones.join(', ')}\n`;plain+=`\n참석자:\n${formatAttendees(r.attendees,false)}\n`;if(r.links&&r.links.length>0)plain+=`\n참고 링크:\n${r.links.map(l=>'- '+l).join('\n')}\n`;plain+='\n';if(kpStr)plain+=`## 핵심 요약\n${kpStr}\n\n`;if(fsStr)plain+=`## 전체 내용 요약\n${fsStr}\n\n`;if(r.decisions?.length)plain+=`## 결정사항\n${r.decisions.map((d,i)=>`${i+1}. ${d}`).join('\n')}\n\n`;if(r.followUps&&Object.keys(r.followUps).length>0){plain+=`## 후속 진행\n`;Object.keys(deptMap).forEach(key=>{if(r.followUps[key]&&r.followUps[key].length>0){plain+=`### ${deptMap[key].label}\n`;r.followUps[key].forEach(a=>{const task=a.task||(typeof a==='string'?a:'');const assignee=a.assignee?` (담당: ${a.assignee})`:'';plain+=`- ${task}${assignee}\n`;});}});plain+='\n';}const ptDisc=(r.followUps?.discussion||[]).map(d=>d.task||(typeof d==='string'?d:''));const ptPend=r.pending||[];const allPend=[...ptDisc,...ptPend];if(allPend.length)plain+=`## 논의 필요 / 미결\n${allPend.map(p=>'- '+p).join('\n')}\n\n`;if(r.issues?.length)plain+=`## ${S.tpl==='plan'?'이슈/리스크 및 고려사항':'이슈/리스크'}\n${r.issues.map(i=>'- '+i).join('\n')}\n\n`;if(etcStr)plain+=`## 기타\n${etcStr}\n`;
   try{const ci=new ClipboardItem({'text/plain':new Blob([plain],{type:'text/plain'}),'text/html':new Blob([html],{type:'text/html'})});await navigator.clipboard.write([ci]);showToast('📋 Confluence 위키용 서식으로 복사되었습니다');}catch(err){navigator.clipboard.writeText(plain).then(()=>showToast('📋 텍스트로 복사되었습니다'));}
 }
-function markdownToConfluenceList(mdStr){const lines=mdStr.split('\n');let html='',inUl=false,inSubUl=false;lines.forEach(line=>{const trimmed=line.trimEnd();if(!trimmed)return;const isSubItem=/^[ ]{2,}- /.test(trimmed);const isItem=/^- /.test(trimmed);if(isSubItem){if(!inSubUl){if(!inUl){html+='<ul>';inUl=true;}html+='<ul>';inSubUl=true;}html+=`<li>${trimmed.replace(/^[ ]*- /,'').replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')}</li>`;}else if(isItem){if(inSubUl){html+='</ul>';inSubUl=false;}if(!inUl){html+='<ul>';inUl=true;}html+=`<li>${trimmed.replace(/^- /,'').replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')}</li>`;}else{if(inSubUl){html+='</ul>';inSubUl=false;}if(inUl){html+='</ul>';inUl=false;}html+=`<p>${trimmed.replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')}</p>`;}});if(inSubUl)html+='</ul>';if(inUl)html+='</ul>';return html;}
+// 마크다운 불릿 → Confluence용 중첩 리스트
+// - 공백 2칸 = 1단계, 깊이 제한 없음 (기존 구현은 2단계까지만 지원)
+// - <ul>을 <li> 안에 넣는 올바른 중첩 구조 (기존은 <ul> 형제로 두어 서식이 깨졌음)
+function markdownToConfluenceList(mdStr){
+  const fmt=s=>String(s).replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>');
+  const lines=[];
+  String(mdStr||'').split('\n').forEach(line=>{
+    if(!line.trim())return;
+    const m=line.match(/^([ \t]*)[-*]\s+(.*)$/);
+    if(m){
+      const sp=m[1].replace(/\t/g,'  ').length;
+      lines.push({d:Math.floor(sp/2),t:m[2]});
+    }else{
+      lines.push({d:null,t:line.trim()});
+    }
+  });
+  let idx=0;
+  function renderList(depth){
+    let s='<ul>';
+    while(idx<lines.length){
+      const cur=lines[idx];
+      if(cur.d===null||cur.d<depth)break;
+      let li=`<li><p>${fmt(cur.t)}</p>`;
+      idx++;
+      if(idx<lines.length&&lines[idx].d!==null&&lines[idx].d>depth){
+        li+=renderList(lines[idx].d);
+      }
+      s+=li+'</li>';
+    }
+    return s+'</ul>';
+  }
+  let html='';
+  while(idx<lines.length){
+    if(lines[idx].d===null){html+=`<p>${fmt(lines[idx].t)}</p>`;idx++;}
+    else html+=renderList(lines[idx].d);
+  }
+  return html;
+}
 
 function handleImage(e){if(e.target.files[0])processImg(e.target.files[0]);}
 async function processImg(file){}

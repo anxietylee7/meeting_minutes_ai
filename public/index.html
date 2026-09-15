@@ -721,7 +721,9 @@ async function generate(){
   try{
     const response=await fetch('/api/generate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({rawText:raw,transcript:transcript,title:document.getElementById('mTitle').value.trim(),keySpeaker:document.getElementById('mKeySpeaker').value.trim(),template:S.tpl,dict:S.dict,milestones:S.ms,links:links,attendees:attendees})});
     const aiData=await response.json();if(!response.ok)throw new Error(aiData.error||'API 호출 실패');
-    S.fuEdit=false;S.fuUndo=null;S.result={...aiData,date,time,location:loc,attendees,links,template:S.tpl,raw,transcript};if(ms)S.result.milestones=[ms];
+    S.fuEdit=false;S.fuUndo=null;const refTitles=Array.isArray(aiData._refDocs)?aiData._refDocs:[];delete aiData._refDocs;
+    S.result={...aiData,date,time,location:loc,attendees,links,template:S.tpl,raw,transcript};if(ms)S.result.milestones=[ms];
+    if(refTitles.length>0)showToast(`📄 참고 문서 ${refTitles.length}건을 반영했습니다`);
     renderResult(S.result);document.getElementById('statusDot').classList.add('active');document.getElementById('saveBtn').disabled=false;showToast('✦ 회의록이 생성되었습니다');
   }catch(err){console.error(err);showToast('❌ 생성 실패: '+err.message);showEmpty();}
   finally{document.getElementById('genBtn').disabled=false;document.getElementById('genBtn').textContent='✦ 회의록 생성';}

@@ -57,10 +57,10 @@ body{font-family:'Noto Sans KR','DM Sans',sans-serif;background:var(--bg);color:
 .month-label{font-size:12px;font-weight:700;color:var(--text2);flex:1;}
 .month-count{font-size:10px;font-weight:600;color:var(--text3);background:var(--surface2);border-radius:10px;padding:1px 7px;flex-shrink:0;}
 .month-group .meeting-item{margin-left:10px;}
-.meeting-item{padding:10px 12px;border-radius:var(--radius-sm);cursor:pointer;transition:all 0.15s;margin-bottom:2px;border:1px solid transparent;}
+.meeting-item{padding:7px 12px;border-radius:var(--radius-sm);cursor:pointer;transition:all 0.15s;margin-bottom:1px;border:1px solid transparent;}
 .meeting-item:hover{background:var(--surface2);}
 .meeting-item.active{background:var(--accent-light);border-color:rgba(224,107,32,0.2);}
-.meeting-item-title{font-size:13px;font-weight:500;margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.meeting-item-title{font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .meeting-item-meta{font-size:11px;color:var(--text3);display:flex;gap:6px;align-items:center;}
 .meeting-tag{padding:1px 6px;border-radius:4px;font-size:10px;font-weight:600;}
 .empty-list{padding:24px 12px;text-align:center;color:var(--text3);font-size:12px;}
@@ -666,10 +666,15 @@ function meetingMonthKey(m){
   const mm=String(parseInt(mo,10)).padStart(2,'0');
   return{key:`${y}-${mm}`,label:`${y}년 ${parseInt(mo,10)}월`};
 }
-// 접힘 상태 저장 (월 단위)
-function loadCollapsed(){try{return JSON.parse(localStorage.getItem('sg_collapsed')||'{}');}catch(e){return{};}}
-function saveCollapsed(o){try{localStorage.setItem('sg_collapsed',JSON.stringify(o));}catch(e){}}
-function toggleMonth(key){const c=loadCollapsed();c[key]=!c[key];saveCollapsed(c);renderList();}
+// 열린 월 하나만 보관 (아코디언). null=미설정(최신 월 기본), ''=전부 접힘
+function loadOpenMonth(){const v=localStorage.getItem('sg_open_month');return v===null?null:v;}
+function saveOpenMonth(v){try{localStorage.setItem('sg_open_month',v);}catch(e){}}
+function toggleMonth(key){
+  // 이미 열린 월을 누르면 접고, 다른 월을 누르면 그 월만 열어 기존 월은 자동으로 접힌다
+  const cur=loadOpenMonth();
+  saveOpenMonth(cur===key?'':key);
+  renderList();
+}
 
 function renderList(){
   const l=document.getElementById('meetingList'),e=document.getElementById('emptyList');
@@ -687,15 +692,15 @@ function renderList(){
   });
   // 최신 월이 위로, 그룹 내에서도 최신이 위로
   const keys=Object.keys(groups).sort().reverse();
-  const collapsed=loadCollapsed();
+  // 미설정이면 가장 최신 월을 기본으로 펼친다
+  let openKey=loadOpenMonth();
+  if(openKey===null)openKey=keys[0];
 
   keys.forEach((key,gi)=>{
     const g=groups[key];
     g.items.reverse();
-    // 기본값: 가장 최신 월만 펼침. 사용자가 토글하면 그 값을 따른다
-    // 단, 현재 열려 있는 회의록이 속한 월은 접혀 있어도 펼쳐서 보여준다
-    const hasCurrent = S.curId && g.items.some(m=>m.id===S.curId);
-    const isCollapsed = hasCurrent ? false : ((key in collapsed) ? collapsed[key] : (gi!==0));
+    // 열린 월 하나만 펼침. 보고 있는 회의록이 속한 월도 접을 수 있다
+    const isCollapsed = key!==openKey;
     const wrap=document.createElement('div');
     wrap.className='month-group';
 
@@ -707,10 +712,9 @@ function renderList(){
 
     if(!isCollapsed){
       g.items.forEach(m=>{
-        const t=T.find(t=>t.id===m.template)||T[0];
         const el=document.createElement('div');
         el.className='meeting-item'+(m.id===S.curId?' active':'');
-        el.innerHTML=`<div class="meeting-item-title">${m.title||'제목 없음'}</div><div class="meeting-item-meta"><span>${m.date||''}</span><span class="meeting-tag ${t.tag}">${t.icon} ${t.label}</span></div>`;
+        el.innerHTML=`<div class="meeting-item-title">${m.title||'제목 없음'}</div>`;
         el.onclick=()=>loadMeeting(m.id);
         wrap.appendChild(el);
       });

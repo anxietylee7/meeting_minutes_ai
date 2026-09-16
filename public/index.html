@@ -345,7 +345,7 @@ body{font-family:'Noto Sans KR','DM Sans',sans-serif;background:var(--bg);color:
           </div>
         </div>
         <div class="editor-body">
-          <div class="input-label">회의 내용 입력 <span style="font-weight:400;color:var(--text3);font-size:11px;">— 회의 중 직접 기입한 메모</span></div>
+          <div class="input-label">회의 내용 입력 <span style="font-weight:400;color:var(--text3);font-size:11px;text-transform:none;letter-spacing:0;">— 회의 중 직접 기입한 메모 · &lt;대주제&gt; · ~요구사항~</span></div>
           <textarea class="raw-textarea" id="rawInput" placeholder="회의 내용을 자유롭게 입력하세요.
 날것의 메모, 대화 내용, 키워드 나열 등 어떤 형식이든 괜찮습니다." oninput="updateCount()"></textarea>
           <div class="image-drop-bar" id="imageBar" onclick="document.getElementById('imgInput').click()">
@@ -723,8 +723,8 @@ async function generate(){
     const aiData=await response.json();if(!response.ok)throw new Error(aiData.error||'API 호출 실패');
     S.fuEdit=false;S.fuUndo=null;const refTitles=Array.isArray(aiData._refDocs)?aiData._refDocs:[];delete aiData._refDocs;
     S.result={...aiData,date,time,location:loc,attendees,links,template:S.tpl,raw,transcript};if(ms)S.result.milestones=[ms];
-    if(refTitles.length>0)showToast(`📄 참고 문서 ${refTitles.length}건을 반영했습니다`);
-    renderResult(S.result);document.getElementById('statusDot').classList.add('active');document.getElementById('saveBtn').disabled=false;showToast('✦ 회의록이 생성되었습니다');
+    if(refTitles.length>0)S.result.refDocs=refTitles;
+    renderResult(S.result);document.getElementById('statusDot').classList.add('active');document.getElementById('saveBtn').disabled=false;showToast(refTitles.length>0?`✦ 회의록 생성 완료 · 참고 문서 ${refTitles.length}건 반영`:'✦ 회의록이 생성되었습니다');
   }catch(err){console.error(err);showToast('❌ 생성 실패: '+err.message);showEmpty();}
   finally{document.getElementById('genBtn').disabled=false;document.getElementById('genBtn').textContent='✦ 회의록 생성';}
 }
@@ -756,7 +756,7 @@ function cleanMarkdownList(val,enforceList=false){
 function renderResult(r){
   const tpl=T.find(t=>t.id===r.template);let h='<div class="result-content">';
   const dateTime=(r.date||'-')+(r.time?' '+r.time:'');
-  h+=`<div class="result-meta"><div class="result-meta-item"><div class="result-meta-label">날짜/시간</div><div class="result-meta-value">${dateTime}</div></div><div class="result-meta-item"><div class="result-meta-label">장소</div><div class="result-meta-value">${r.location||'-'}</div></div><div class="result-meta-item" style="flex-basis:100%;margin-top:4px;"><div class="result-meta-label">참석자</div><div class="result-meta-value">${formatAttendees(r.attendees,true)}</div></div>${r.links&&r.links.length>0?`<div class="result-meta-item" style="flex-basis:100%;margin-top:4px;"><div class="result-meta-label">참고 링크</div><div class="result-meta-value">${r.links.map(l=>`<a href="${l}" target="_blank" style="color:var(--accent);margin-right:12px;word-break:break-all;">${l}</a>`).join('')}</div></div>`:''}</div>`;
+  h+=`<div class="result-meta"><div class="result-meta-item"><div class="result-meta-label">날짜/시간</div><div class="result-meta-value">${dateTime}</div></div><div class="result-meta-item"><div class="result-meta-label">장소</div><div class="result-meta-value">${r.location||'-'}</div></div><div class="result-meta-item" style="flex-basis:100%;margin-top:4px;"><div class="result-meta-label">참석자</div><div class="result-meta-value">${formatAttendees(r.attendees,true)}</div></div>${r.links&&r.links.length>0?`<div class="result-meta-item" style="flex-basis:100%;margin-top:4px;"><div class="result-meta-label">참고 링크</div><div class="result-meta-value">${r.links.map(l=>`<a href="${l}" target="_blank" style="color:var(--accent);margin-right:12px;word-break:break-all;">${l}</a>`).join('')}</div></div>`:''}</div>${(r.refDocs&&r.refDocs.length)?`<div class="result-meta-item" style="flex-basis:100%;"><div class="result-meta-label">참고 문서 (배경 자료)</div><div class="result-meta-value" style="font-size:11px;color:var(--text2);">📄 ${r.refDocs.join(' · ')}</div></div>`:''}`;
   const kpStr=cleanMarkdownList(r.keyPoints,true);const fsStr=cleanMarkdownList(r.fullSummary,true);const etcStr=cleanMarkdownList(r.etc);
   if(kpStr)h+=`<div class="result-section"><div class="result-section-title">💡 핵심 요약</div><div class="summary-box">${marked.parse(kpStr)}</div></div>`;
   if(fsStr)h+=`<div class="result-section"><div class="result-section-title">📝 전체 내용 요약</div><div class="summary-box">${marked.parse(fsStr)}</div></div>`;

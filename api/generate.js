@@ -628,6 +628,25 @@ TA, 그래픽 작업, 화면 연출, 배경, 캐릭터, 비주얼,
   4순위 — 이 회의에서 처음 제기된, 담당이 분명한 검토 과제
   → 5순위 이하(각 부서 내부의 통상 업무 진행)는 **넣지 않는다.**
 
+■ 각 항목에 반드시 "priority" (중요도) 를 1~3 중 하나로 지정할 것:
+  priority 1 = 필수. 의사결정권자 요청이거나, 결정사항 실행에 반드시 필요한 작업
+  priority 2 = 중요. 부서 간 협의가 필요하거나 기한이 명시된 작업
+  priority 3 = 참고. 그 외 이 회의에서 제기된 검토 과제
+  ★ priority 1 은 회의당 최대 3개까지만 부여한다. 남발하지 말 것.
+  ★ 원래 하던 통상 업무는 애초에 넣지 않는다 (priority 3 으로도 넣지 말 것).
+
+■ 부서(조직) 배정 기준 — 틀리기 쉬우니 주의:
+  ★ 판단 기준은 "그 일을 **실제로 수행할** 조직"이다. **발언자 기준이 아니다.**
+    (예: AI센터 담당자가 "기획서에 반영이 필요하다"고 말했으면 → 기획실)
+  - 작업의 산출물이 무엇인지 보고 판단한다:
+    · 기획서·스펙·밸런스·수치·콘텐츠 설계 → 기획실
+    · 클라이언트/게임서버 코드·빌드·배포 → 개발실
+    · 일정 관리·QA·프로세스·외부 조율·계약·비용 → 개발관리실
+    · TTS·LLM·모델·발화·프롬프트·AI 서버 → AI센터
+    · TA·그래픽·모델링·텍스처·연출·비주얼 → 그래픽실
+  - 한 항목에 여러 부서가 얽히면 **주관 부서 한 곳만** 선택한다. 중복 배정 금지.
+  - 어느 부서인지 판단이 어려우면 그 항목은 priority 3 으로 낮춘다.
+
 ■ 개수: **총 4~7개**를 넘기지 말 것 (부서 합산).
   1~2순위만으로 이미 7개가 찬다면 3~4순위는 전부 버린다.
   같은 부서에 3개 이상 쌓이면 상위 개념으로 묶어 1~2개로 합칠 것.
@@ -740,11 +759,11 @@ JSON 출력 구조 (엄격 준수)
   "decisions": ["'~확정','~결정' 뉘앙스만. '~완료'는 넣지 말 것. 1~3개. 없으면 빈 배열"],
   "followUps": {
     "_deadline": null,
-    "planning": [{"task": "간결한 액션 아이템", "assignee": "담당자 or null"}],
-    "development": [{"task": "간결한 액션 아이템", "assignee": "담당자 or null"}],
-    "management": [{"task": "간결한 액션 아이템", "assignee": "담당자 or null"}],
-    "ai": [{"task": "간결한 액션 아이템", "assignee": "담당자 or null"}],
-    "graphic": [{"task": "간결한 액션 아이템", "assignee": "담당자 or null"}],
+    "planning": [{"task": "간결한 액션 아이템", "assignee": "담당자 or null", "priority": 1}],
+    "development": [{"task": "간결한 액션 아이템", "assignee": "담당자 or null", "priority": 1}],
+    "management": [{"task": "간결한 액션 아이템", "assignee": "담당자 or null", "priority": 1}],
+    "ai": [{"task": "간결한 액션 아이템", "assignee": "담당자 or null", "priority": 1}],
+    "graphic": [{"task": "간결한 액션 아이템", "assignee": "담당자 or null", "priority": 1}],
     "discussion": []
   },
   "pending": [],
@@ -802,6 +821,46 @@ JSON 출력 구조 (엄격 준수)
       console.error("JSON parse failed. raw:", cleaned.slice(0, 500));
       return res.status(502).json({ error: 'AI 응답을 JSON으로 해석하지 못했습니다. 다시 시도해주세요.' });
     }
+    // ── 후속 진행 강제 제한 ──
+    // 프롬프트 지시만으로는 개수가 지켜지지 않으므로, 중요도 순으로 정렬해 상한까지만 남긴다.
+    // 작성자 요구사항(~자세히~ 등)으로 상세화를 요청한 경우에는 제한하지 않는다.
+    const wantsMore = /~[^~]*(자세히|상세|전부|빠짐없이|모두|많이|길게)[^~]*~/.test(String(rawText || ''));
+    const FU_LIMIT = 7;
+    if (resultJson.followUps && !wantsMore) {
+      const DEPTS = ['planning', 'development', 'management', 'ai', 'graphic'];
+      const flat = [];
+      DEPTS.forEach(k => {
+        const arr = Array.isArray(resultJson.followUps[k]) ? resultJson.followUps[k] : [];
+        arr.forEach(it => {
+          const task = (it && typeof it === 'object') ? (it.task || '') : String(it || '');
+          if (!String(task).trim()) return;
+          const pr = (it && typeof it === 'object' && Number(it.priority)) || 3;
+          flat.push({ dept: k, task: String(task).trim(), assignee: (it && it.assignee) || null, priority: Math.min(Math.max(pr, 1), 3) });
+        });
+      });
+      if (flat.length > FU_LIMIT) {
+        // 중요도 오름차순(1이 가장 중요), 동일 중요도는 원래 순서 유지
+        flat.sort((a, b) => a.priority - b.priority);
+        const kept = flat.slice(0, FU_LIMIT);
+        const rebuilt = {};
+        DEPTS.forEach(k => { rebuilt[k] = []; });
+        kept.forEach(it => { rebuilt[it.dept].push({ task: it.task, assignee: it.assignee }); });
+        rebuilt.discussion = [];
+        rebuilt._deadline = null;
+        console.log(`followUps 제한 적용: ${flat.length} → ${kept.length}`);
+        resultJson.followUps = rebuilt;
+      } else {
+        // 상한 이내여도 내부용 priority 필드는 화면에 불필요하므로 제거
+        DEPTS.forEach(k => {
+          if (Array.isArray(resultJson.followUps[k])) {
+            resultJson.followUps[k] = resultJson.followUps[k]
+              .filter(it => String((it && it.task) || it || '').trim())
+              .map(it => ({ task: (it && it.task) || String(it || ''), assignee: (it && it.assignee) || null }));
+          }
+        });
+      }
+    }
+
     // 참고 문서를 몇 건 읽었는지 함께 전달 (UI 안내용)
     resultJson._refDocs = refDocs.map(d => d.title);
     res.status(200).json(resultJson);

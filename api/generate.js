@@ -628,6 +628,31 @@ TA, 그래픽 작업, 화면 연출, 배경, 캐릭터, 비주얼,
   4순위 — 이 회의에서 처음 제기된, 담당이 분명한 검토 과제
   → 5순위 이하(각 부서 내부의 통상 업무 진행)는 **넣지 않는다.**
 
+★★★ confirmed (확정/제안) 구분 — 가장 중요 ★★★
+
+각 후속 항목에 "confirmed" 를 true/false 로 반드시 지정한다.
+
+■ confirmed: true (확정) — 작성자가 직접 후속 작업으로 지목한 것
+  작성자 메모에서 줄 앞에 ">>" 가 붙은 줄이 여기에 해당한다.
+  예: ">> 폴리싱 범위 구체화해서 다음 회의에 공유"
+  - ">>" 가 붙은 줄은 **반드시 후속 진행에 포함**하고 confirmed: true 로 표기한다.
+  - 내용을 임의로 바꾸거나 다른 항목과 합치지 말 것. 표현만 다듬어 그대로 살린다.
+  - ">>" 표시 자체는 결과 문장에 남기지 않는다.
+  - 개수 제한과 무관하게 전부 포함한다. 몇 개든 모두 살린다.
+
+■ confirmed: false (제안) — AI가 추가로 발굴한 것
+  ">>" 표시가 없지만, 회의 내용상 후속 작업으로 보이는 것.
+  작성자가 미처 표시하지 못하고 넘어갔을 수 있는 항목을 찾아내는 역할이다.
+  - 아래 "채택 우선순위"와 "제외 대상"을 적용해 선별한다.
+  - **최대 5개까지만** 제안한다. 확신이 약한 것은 넣지 말 것.
+  - 이미 confirmed: true 로 들어간 항목과 중복되는 내용은 제안하지 말 것.
+
+■ ">>" 표시가 메모에 하나도 없는 경우:
+  모든 항목을 confirmed: false (제안) 로 출력한다. 작성자가 검토 후 선택한다.
+
+■ 주의: ">>" 는 [A] 작성자 메모에서만 인정한다.
+  [B] 녹음본 전사에 나오는 ">>" 는 음성 인식 결과이므로 무시한다.
+
 ■ 각 항목에 반드시 "priority" (중요도) 를 1~3 중 하나로 지정할 것:
   priority 1 = 필수. 의사결정권자 요청이거나, 결정사항 실행에 반드시 필요한 작업
   priority 2 = 중요. 부서 간 협의가 필요하거나 기한이 명시된 작업
@@ -759,11 +784,11 @@ JSON 출력 구조 (엄격 준수)
   "decisions": ["'~확정','~결정' 뉘앙스만. '~완료'는 넣지 말 것. 1~3개. 없으면 빈 배열"],
   "followUps": {
     "_deadline": null,
-    "planning": [{"task": "간결한 액션 아이템", "assignee": "담당자 or null", "priority": 1}],
-    "development": [{"task": "간결한 액션 아이템", "assignee": "담당자 or null", "priority": 1}],
-    "management": [{"task": "간결한 액션 아이템", "assignee": "담당자 or null", "priority": 1}],
-    "ai": [{"task": "간결한 액션 아이템", "assignee": "담당자 or null", "priority": 1}],
-    "graphic": [{"task": "간결한 액션 아이템", "assignee": "담당자 or null", "priority": 1}],
+    "planning": [{"task": "간결한 액션 아이템", "assignee": "담당자 or null", "priority": 1, "confirmed": false}],
+    "development": [{"task": "간결한 액션 아이템", "assignee": "담당자 or null", "priority": 1, "confirmed": false}],
+    "management": [{"task": "간결한 액션 아이템", "assignee": "담당자 or null", "priority": 1, "confirmed": false}],
+    "ai": [{"task": "간결한 액션 아이템", "assignee": "담당자 or null", "priority": 1, "confirmed": false}],
+    "graphic": [{"task": "간결한 액션 아이템", "assignee": "담당자 or null", "priority": 1, "confirmed": false}],
     "discussion": []
   },
   "pending": [],
@@ -821,44 +846,43 @@ JSON 출력 구조 (엄격 준수)
       console.error("JSON parse failed. raw:", cleaned.slice(0, 500));
       return res.status(502).json({ error: 'AI 응답을 JSON으로 해석하지 못했습니다. 다시 시도해주세요.' });
     }
-    // ── 후속 진행 강제 제한 ──
-    // 프롬프트 지시만으로는 개수가 지켜지지 않으므로, 중요도 순으로 정렬해 상한까지만 남긴다.
-    // 작성자 요구사항(~자세히~ 등)으로 상세화를 요청한 경우에는 제한하지 않는다.
-    const wantsMore = /~[^~]*(자세히|상세|전부|빠짐없이|모두|많이|길게)[^~]*~/.test(String(rawText || ''));
-    const FU_LIMIT = 7;
-    if (resultJson.followUps && !wantsMore) {
+    // ── 후속 진행 정리: 확정은 모두 보존, 제안만 개수 제한 ──
+    const SUGGEST_LIMIT = 5;
+    if (resultJson.followUps) {
       const DEPTS = ['planning', 'development', 'management', 'ai', 'graphic'];
-      const flat = [];
+      const confirmed = [];
+      const suggested = [];
       DEPTS.forEach(k => {
         const arr = Array.isArray(resultJson.followUps[k]) ? resultJson.followUps[k] : [];
         arr.forEach(it => {
           const task = (it && typeof it === 'object') ? (it.task || '') : String(it || '');
           if (!String(task).trim()) return;
           const pr = (it && typeof it === 'object' && Number(it.priority)) || 3;
-          flat.push({ dept: k, task: String(task).trim(), assignee: (it && it.assignee) || null, priority: Math.min(Math.max(pr, 1), 3) });
+          const row = {
+            dept: k,
+            task: String(task).trim().replace(/^>>\s*/, ''),
+            assignee: (it && it.assignee) || null,
+            priority: Math.min(Math.max(pr, 1), 3)
+          };
+          if (it && it.confirmed === true) confirmed.push(row);
+          else suggested.push(row);
         });
       });
-      if (flat.length > FU_LIMIT) {
-        // 중요도 오름차순(1이 가장 중요), 동일 중요도는 원래 순서 유지
-        flat.sort((a, b) => a.priority - b.priority);
-        const kept = flat.slice(0, FU_LIMIT);
-        const rebuilt = {};
-        DEPTS.forEach(k => { rebuilt[k] = []; });
-        kept.forEach(it => { rebuilt[it.dept].push({ task: it.task, assignee: it.assignee }); });
-        rebuilt.discussion = [];
-        rebuilt._deadline = null;
-        console.log(`followUps 제한 적용: ${flat.length} → ${kept.length}`);
-        resultJson.followUps = rebuilt;
-      } else {
-        // 상한 이내여도 내부용 priority 필드는 화면에 불필요하므로 제거
-        DEPTS.forEach(k => {
-          if (Array.isArray(resultJson.followUps[k])) {
-            resultJson.followUps[k] = resultJson.followUps[k]
-              .filter(it => String((it && it.task) || it || '').trim())
-              .map(it => ({ task: (it && it.task) || String(it || ''), assignee: (it && it.assignee) || null }));
-          }
-        });
-      }
+      // 제안만 중요도순으로 상한까지 남긴다 (확정은 몇 개든 보존)
+      suggested.sort((a, b) => a.priority - b.priority);
+      const keptSuggested = suggested.slice(0, SUGGEST_LIMIT);
+      console.log(`followUps 정리: 확정 ${confirmed.length}건 / 제안 ${suggested.length} → ${keptSuggested.length}건`);
+
+      const rebuilt = {};
+      DEPTS.forEach(k => { rebuilt[k] = []; });
+      confirmed.forEach(it => rebuilt[it.dept].push({ task: it.task, assignee: it.assignee }));
+      rebuilt.discussion = [];
+      rebuilt._deadline = null;
+      resultJson.followUps = rebuilt;
+      // 제안은 별도 영역으로 분리해 사용자가 채택 여부를 고르게 한다
+      resultJson.suggestedFollowUps = keptSuggested.map(it => ({
+        dept: it.dept, task: it.task, assignee: it.assignee
+      }));
     }
 
     // 참고 문서를 몇 건 읽었는지 함께 전달 (UI 안내용)

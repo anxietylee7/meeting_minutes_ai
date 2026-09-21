@@ -196,6 +196,10 @@ body{font-family:'Noto Sans KR','DM Sans',sans-serif;background:var(--bg);color:
 /* 결정사항 & 후속 진행 통합 섹션 */
 .dc-label{font-size:11px;font-weight:700;color:var(--text2);margin-bottom:4px;letter-spacing:0.3px;}
 .dc-divider{border:none;border-top:1px solid var(--border);margin:12px 0;}
+.sug-row{display:flex;align-items:flex-start;gap:7px;padding:4px 0;}
+.sug-chk{margin-top:3px;width:14px;height:14px;cursor:pointer;flex-shrink:0;accent-color:var(--accent);}
+.sug-label{flex:1;font-size:12px;color:var(--text2);cursor:pointer;line-height:1.6;}
+.sug-label:hover{color:var(--text);}
 .fu-tag{display:inline-block;padding:0 6px;margin-right:4px;border:1px solid;border-radius:4px;font-size:10px;font-weight:700;vertical-align:1px;}
 
 .auth-screen{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:999;}
@@ -347,7 +351,7 @@ body{font-family:'Noto Sans KR','DM Sans',sans-serif;background:var(--bg);color:
           </div>
         </div>
         <div class="editor-body">
-          <div class="input-label">회의 내용 입력 <span style="font-weight:400;color:var(--text3);font-size:11px;text-transform:none;letter-spacing:0;">— 회의 중 직접 기입한 메모 · &lt;대주제&gt; · ~요구사항~</span></div>
+          <div class="input-label">회의 내용 입력 <span style="font-weight:400;color:var(--text3);font-size:11px;text-transform:none;letter-spacing:0;">— &lt;대주제&gt; · ~요구사항~ · &gt;&gt;후속 작업</span></div>
           <textarea class="raw-textarea" id="rawInput" placeholder="회의 내용을 자유롭게 입력하세요.
 날것의 메모, 대화 내용, 키워드 나열 등 어떤 형식이든 괜찮습니다." oninput="updateCount()"></textarea>
 
@@ -499,6 +503,34 @@ function fuMove(fromKey,i,toKey){
   showToast('📌 항목을 이동했습니다');
 }
 // 저장 전 내용이 빈 후속 항목 제거 (수정 모드에서 추가만 하고 비워둔 경우)
+/* ═══ AI 제안 채택 ═══ */
+let sugChecked=new Set();
+function sugToggle(i){sugChecked.has(i)?sugChecked.delete(i):sugChecked.add(i);}
+function sugAdopt(){
+  const sug=S.result&&Array.isArray(S.result.suggestedFollowUps)?S.result.suggestedFollowUps:[];
+  if(sugChecked.size===0){showToast('추가할 항목을 체크해주세요');return;}
+  const picked=[...sugChecked].sort((a,b)=>a-b).map(i=>sug[i]).filter(Boolean);
+  picked.forEach(x=>{
+    const list=fuList(x.dept||'planning');
+    if(list)list.push({task:x.task||'',assignee:x.assignee||''});
+  });
+  // 채택된 항목은 제안 목록에서 제거
+  S.result.suggestedFollowUps=sug.filter((_,i)=>!sugChecked.has(i));
+  sugChecked.clear();
+  renderResult(S.result);
+  showToast(`✓ ${picked.length}건을 후속 진행에 추가했습니다`);
+}
+function sugDismissAll(){
+  if(!S.result)return;
+  const n=(S.result.suggestedFollowUps||[]).length;
+  if(n===0)return;
+  if(!window.confirm(`AI 제안 ${n}건을 모두 지울까요?`))return;
+  S.result.suggestedFollowUps=[];
+  sugChecked.clear();
+  renderResult(S.result);
+  showToast('제안을 지웠습니다');
+}
+
 function fuPrune(){
   if(!S.result||!S.result.followUps)return;
   Object.keys(S.result.followUps).forEach(k=>{
@@ -723,9 +755,9 @@ function renderList(){
   });
 }
 
-function newMeeting(){S.curId=null;S.result=null;S.fuEdit=false;S.fuUndo=null;document.getElementById('mTitle').value='';document.getElementById('mDate').value=new Date().toISOString().split('T')[0];document.getElementById('mTime').value='';document.getElementById('mLocation').value='';document.getElementById('mAttPlanning').value='';document.getElementById('mAttDev').value='';document.getElementById('mAttMgmt').value='';document.getElementById('mAttAi').value='';document.getElementById('mAttGraphic').value='';document.getElementById('mAttEtc').value='';document.getElementById('mLink1').value='';document.getElementById('mLink2').value='';document.getElementById('mLink3').value='';document.getElementById('rawInput').value='';document.getElementById('transcriptInput').value='';document.getElementById('mKeySpeaker').value='';document.getElementById('topbarTitle').textContent='새 회의록';S.tpl='general';updateCount();showEmpty();renderList();}
+function newMeeting(){S.curId=null;S.result=null;S.fuEdit=false;S.fuUndo=null;sugChecked.clear();document.getElementById('mTitle').value='';document.getElementById('mDate').value=new Date().toISOString().split('T')[0];document.getElementById('mTime').value='';document.getElementById('mLocation').value='';document.getElementById('mAttPlanning').value='';document.getElementById('mAttDev').value='';document.getElementById('mAttMgmt').value='';document.getElementById('mAttAi').value='';document.getElementById('mAttGraphic').value='';document.getElementById('mAttEtc').value='';document.getElementById('mLink1').value='';document.getElementById('mLink2').value='';document.getElementById('mLink3').value='';document.getElementById('rawInput').value='';document.getElementById('transcriptInput').value='';document.getElementById('mKeySpeaker').value='';document.getElementById('topbarTitle').textContent='새 회의록';S.tpl='general';updateCount();showEmpty();renderList();}
 
-function loadMeeting(id){const m=S.meetings.find(x=>x.id===id);if(!m)return;S.curId=id;S.result=m.result;S.fuEdit=false;S.fuUndo=null;document.getElementById('mTitle').value=m.title||'';document.getElementById('mDate').value=m.date||'';document.getElementById('mTime').value=m.time||'';document.getElementById('mLocation').value=m.location||'';const atts=m.attendees||{};document.getElementById('mAttPlanning').value=atts.planning||'';document.getElementById('mAttDev').value=atts.dev||'';document.getElementById('mAttMgmt').value=atts.mgmt||'';document.getElementById('mAttAi').value=atts.ai||'';document.getElementById('mAttGraphic').value=atts.graphic||'';document.getElementById('mAttEtc').value=atts.etc||'';document.getElementById('mLink1').value=m.links&&m.links[0]?m.links[0]:'';document.getElementById('mLink2').value=m.links&&m.links[1]?m.links[1]:'';document.getElementById('mLink3').value=m.links&&m.links[2]?m.links[2]:'';document.getElementById('rawInput').value=m.raw||'';document.getElementById('transcriptInput').value=m.transcript||'';document.getElementById('mKeySpeaker').value=m.keySpeaker||'';document.getElementById('topbarTitle').textContent=m.title||'제목 없음';S.tpl=m.template||'general';updateCount();if(m.result)renderResult(m.result);renderList();}
+function loadMeeting(id){const m=S.meetings.find(x=>x.id===id);if(!m)return;S.curId=id;S.result=m.result;S.fuEdit=false;S.fuUndo=null;sugChecked.clear();document.getElementById('mTitle').value=m.title||'';document.getElementById('mDate').value=m.date||'';document.getElementById('mTime').value=m.time||'';document.getElementById('mLocation').value=m.location||'';const atts=m.attendees||{};document.getElementById('mAttPlanning').value=atts.planning||'';document.getElementById('mAttDev').value=atts.dev||'';document.getElementById('mAttMgmt').value=atts.mgmt||'';document.getElementById('mAttAi').value=atts.ai||'';document.getElementById('mAttGraphic').value=atts.graphic||'';document.getElementById('mAttEtc').value=atts.etc||'';document.getElementById('mLink1').value=m.links&&m.links[0]?m.links[0]:'';document.getElementById('mLink2').value=m.links&&m.links[1]?m.links[1]:'';document.getElementById('mLink3').value=m.links&&m.links[2]?m.links[2]:'';document.getElementById('rawInput').value=m.raw||'';document.getElementById('transcriptInput').value=m.transcript||'';document.getElementById('mKeySpeaker').value=m.keySpeaker||'';document.getElementById('topbarTitle').textContent=m.title||'제목 없음';S.tpl=m.template||'general';updateCount();if(m.result)renderResult(m.result);renderList();}
 
 function saveMeeting(){if(!S.result)return;fuPrune();const title=document.getElementById('mTitle').value.trim()||'제목 없음';const date=document.getElementById('mDate').value;const time=document.getElementById('mTime').value;const loc=document.getElementById('mLocation').value;const attendees={planning:document.getElementById('mAttPlanning').value.trim(),dev:document.getElementById('mAttDev').value.trim(),mgmt:document.getElementById('mAttMgmt').value.trim(),ai:document.getElementById('mAttAi').value.trim(),graphic:document.getElementById('mAttGraphic').value.trim(),etc:document.getElementById('mAttEtc').value.trim()};const l1=document.getElementById('mLink1').value.trim();const l2=document.getElementById('mLink2').value.trim();const l3=document.getElementById('mLink3').value.trim();const links=[l1,l2,l3].filter(Boolean);const raw=document.getElementById('rawInput').value.trim(),transcript=document.getElementById('transcriptInput').value.trim(),keySpeaker=document.getElementById('mKeySpeaker').value.trim();let meeting;if(S.curId){const i=S.meetings.findIndex(m=>m.id===S.curId);if(i!==-1){S.meetings[i]={...S.meetings[i],title,date,time,location:loc,attendees,links,raw,transcript,keySpeaker,template:S.tpl,result:S.result};meeting=S.meetings[i];}}else{const id=Date.now().toString();S.curId=id;meeting={id,title,date,time,location:loc,attendees,links,raw,transcript,keySpeaker,template:S.tpl,result:S.result};S.meetings.push(meeting);}saveMeetings();renderList();document.getElementById('topbarTitle').textContent=title;syncToCloud(meeting);showToast('💾 저장되었습니다');}
 
@@ -866,6 +898,20 @@ function renderResult(r){
           });
           h+=`</ul>`;
         }
+      }
+      // ── AI 제안 (채택 전) ──
+      const sug=Array.isArray(r.suggestedFollowUps)?r.suggestedFollowUps:[];
+      if(sug.length>0){
+        h+=`<hr class="dc-divider">`;
+        h+=`<div class="dc-label" style="display:flex;align-items:center;gap:6px;">💡 AI 제안 <span style="font-weight:500;color:var(--text3);font-size:10px;">체크한 항목만 후속 진행에 추가됩니다</span></div>`;
+        sug.forEach((x,i)=>{
+          const d=FU_DEPTS.find(dd=>dd.key===x.dept)||FU_DEPTS[0];
+          h+=`<div class="sug-row">`;
+          h+=`<input type="checkbox" class="sug-chk" id="sug${i}" onchange="sugToggle(${i})">`;
+          h+=`<label for="sug${i}" class="sug-label"><span class="fu-tag" style="color:${d.color};border-color:${d.color}55;">${d.label}</span> ${fmtInline(x.task||'')}${x.assignee?` <span style="font-size:10px;font-weight:600;color:${d.color};">(${x.assignee})</span>`:''}</label>`;
+          h+=`</div>`;
+        });
+        h+=`<div style="display:flex;gap:6px;margin-top:8px;"><button class="fu-add" onclick="sugAdopt()">✓ 체크한 항목 추가</button><button class="fu-add" onclick="sugDismissAll()">제안 전체 지우기</button></div>`;
       }
       h+=`</div></div>`;
     }
